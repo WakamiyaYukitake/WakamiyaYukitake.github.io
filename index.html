@@ -1,17 +1,125 @@
 <!doctype html>
 <html lang="ja">
 <head>
-  <meta charset="utf-8">
+  <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>My GitHub Pages</title>
+  <title>Yuki Wakamia — Research & Activities</title>
+  <meta name="description" content="Research page and activity site.">
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
-  <h1>Hello GitHub Pages!</h1>
-  <p>ここから自分のページを作っていきましょう。</p>
+  <header class="site-header" role="banner">
+    <div class="container header-inner">
+      <div class="logo">Yuki W.</div>
+      <button id="menu-btn" aria-label="Open menu" class="menu-btn">☰</button>
+      <nav id="nav" class="site-nav" role="navigation" aria-label="Main">
+        <a href="#home" class="nav-link">Home</a>
+        <a href="#research" class="nav-link">Research</a>
+        <a href="#media" class="nav-link">Media</a>
+        <a href="#circle" class="nav-link">Circle</a>
+        <a href="#contact" class="nav-link">Contact</a>
+      </nav>
+    </div>
+  </header>
 
-  <button id="btn">クリックしてね</button>
-  <p id="msg"></p>
+  <main id="main" role="main">
+    <!-- Hero / Home -->
+    <section id="home" class="section hero section--full" data-title="Home">
+      <div class="container hero-inner">
+        <h1 class="hero-title">研究と活動を「流れる」ように見せるポートフォリオ</h1>
+        <p class="hero-lead">都市・水工学・数値シミュレーションを中心に研究を行っています。ここでは研究概要、デモ動画、サークル活動を紹介します。</p>
+        <p class="hero-cta"><a class="btn" href="#research">研究を見る</a> <a class="btn ghost" href="#media">動画を見る</a></p>
+      </div>
+    </section>
+
+    <!-- Research -->
+    <section id="research" class="section" data-title="Research">
+      <div class="container">
+        <h2>Research</h2>
+        <p>現在の研究テーマ（例）：PLATEAU と粒子法を用いた都市域浸水解析。目的・手法・主な成果を簡潔に示します。</p>
+
+        <div class="projects-grid">
+          <article class="card">
+            <div class="thumb" style="background-image:linear-gradient(135deg,var(--purple),var(--blue));"></div>
+            <h3>浸水解析の可視化 (Project A)</h3>
+            <p>粒子法（SPH）を用いて都市域での浸水を可視化し、避難計画の評価指標を提案しました。</p>
+            <p><a class="btn small" href="#media">Demo</a> <a class="btn small ghost" href="#">Paper</a></p>
+          </article>
+
+          <article class="card">
+            <div class="thumb" style="background-image:linear-gradient(135deg,var(--green),var(--blue));"></div>
+            <h3>3D都市モデル連携 (Project B)</h3>
+            <p>PLATEAU 等の3D都市データを取り込み、洪水パスを解析するためのプリプロセスを開発しました。</p>
+            <p><a class="btn small" href="#research">Details</a></p>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <!-- Media -->
+    <section id="media" class="section" data-title="Media">
+      <div class="container">
+        <h2>Media (動画)</h2>
+        <p>実験・シミュレーションのデモ動画をこちらで再生できます。長尺動画は YouTube に上げて埋め込むことを推奨します。</p>
+
+        <div class="video-wrapper">
+          <!-- Replace VIDEO_ID with your YouTube ID -->
+          <iframe src="https://www.youtube.com/embed/VIDEO_ID" title="研究デモ動画" frameborder="0"
+            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+        </div>
+
+        <h3 style="margin-top:28px">Other demos</h3>
+        <div class="projects-grid">
+          <article class="card">
+            <div class="thumb" style="background-image:linear-gradient(135deg,var(--blue),var(--green));"></div>
+            <h4>映像キャプチャ A</h4>
+            <p>キャプション：短い説明を入れます。</p>
+          </article>
+          <article class="card">
+            <div class="thumb" style="background-image:linear-gradient(135deg,var(--purple),var(--green));"></div>
+            <h4>映像キャプチャ B</h4>
+            <p>キャプション：補足情報。</p>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <!-- Circle -->
+    <section id="circle" class="section" data-title="Circle">
+      <div class="container">
+        <h2>Circle / Activities</h2>
+        <p>サークルでの活動紹介。イベントや作例、展示の様子を写真で見せます。</p>
+
+        <div class="gallery-grid">
+          <figure class="gallery-item">
+            <img loading="lazy" src="assets/thumb1.svg" alt="活動写真1">
+            <figcaption>長崎展示会での出展風景</figcaption>
+          </figure>
+          <figure class="gallery-item">
+            <img loading="lazy" src="assets/thumb2.svg" alt="活動写真2">
+            <figcaption>プロトタイプ試作</figcaption>
+          </figure>
+          <figure class="gallery-item">
+            <img loading="lazy" src="assets/thumb3.svg" alt="活動写真3">
+            <figcaption>メンバー集合写真</figcaption>
+          </figure>
+        </div>
+      </div>
+    </section>
+
+    <!-- Contact -->
+    <section id="contact" class="section" data-title="Contact">
+      <div class="container">
+        <h2>Contact & CV</h2>
+        <p>ご連絡・履歴書ダウンロードはこちら。</p>
+        <p><a href="mailto:you@example.com" class="btn">メールで連絡</a> <a href="assets/CV-placeholder.pdf" class="btn ghost" download>CV (PDF)</a></p>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer" role="contentinfo">
+    <div class="container">© <span id="year"></span> Yuki Wakamia — All rights reserved.</div>
+  </footer>
 
   <script src="script.js"></script>
 </body>
