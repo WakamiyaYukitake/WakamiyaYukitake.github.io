@@ -1,0 +1,92 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>プロジェクト演習Ⅲ — Wakamiya Yukitake</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header class="site-header" role="banner">
+    <div class="container header-inner">
+      <div class="logo">WY</div>
+      <button id="menu-btn" aria-label="Open menu" class="menu-btn">☰</button>
+    </div>
+  </header>
+
+  <main id="main" role="main">
+    <section class="section in-view">
+      <div class="container">
+        <h1>プロジェクト演習Ⅲ</h1>
+        <h2>都市空間における氾濫流挙動の解析 ― SPH法による構造物配置の影響評価</h2>
+        <p class="small-muted">
+          作成日：2025年9月12日 若宮<br>
+          更新日：2025年9月19日 若宮<br>
+          2025年9月22日 若宮
+        </p>
+
+        <h2>概要</h2>
+        <p>
+          本演習は、建物の個数・フットプリント・階数（高さ）・配置を決め、その配置が河川氾濫（ダムブレイク様式）時の流速・浸水深等にどのように影響するかを粒子法であるSPH法を用いたGUIで構築されたDesignSPHysicsで解析する。
+          既定の構造物配置（以下「既定配置」）を基準として解析を行い、そこから配置改良案を作成して、変更の効果などを可視化することを目標とする。
+        </p>
+
+        <h2>背景</h2>
+        <p>
+          近年、線状降水帯や気候変動の影響により、局地的な豪雨による都市域の浸水被害が頻発している。
+          都市域では、流入水量だけでなく、建物や道路の配置といった構造物配置が氾濫流挙動に影響を与える。
+          Balaianらは、都市の空隙率や建物の整然さといった形態的特徴が、浸水深や流速分布と密接に関係することを示している。
+        </p>
+
+        <h2>目的</h2>
+        <ul>
+          <li>既定配置を基準に、総延べ床面積を満たす設計案を複数作成し、河川越流（ダムブレイク様式）に対して避難所周辺の最大流速・浸水深・到達時間がどのように変化するかを定量的に比較する。</li>
+          <li>配置改良による効果が生じる流体の流れ（流路誘導、分流、局所加速、渦の生成、越流点の移動）を可視化する。</li>
+          <li>改良案の実務的意味（避難確保、建物の配置効率、実装上の注意点）を簡潔な提言としてまとめられるレベルまで検証する。</li>
+          <li>浮遊物の検証、解析領域・解析時間などの改善。</li>
+        </ul>
+
+        <h2>条件設定</h2>
+        <p>都市形態指標を定義・計算し、同一流入量条件で比較する。DesignSPHysicsではダムブレイク方式を用いる。</p>
+        <p>粒子間距離（Inter-particle distance）を0.01mとし、解析スケールを1/20とする。</p>
+
+        <h2>解析手順</h2>
+        <ol>
+          <li>DesignSPHysicsの準備（FreeCAD / ParaView / DualSPHysics のセットアップ）</li>
+          <li>「Pre-processing」→「New Case」を選択し解析領域を定義</li>
+          <li>モデルを「Save」で保存 → 「Gencase」で粒子確認 → 「Run」で解析</li>
+          <li>「PartVTK」でvtkファイル化し、ParaViewで可視化</li>
+        </ol>
+        <p>解析領域：2.5m × 2.5m × 1.0m、解析時間：10s（1ステップ1s）</p>
+
+        <h2>基準配置例</h2>
+        <!-- 基準配置の画像 -->
+        <div style="margin-top:20px; text-align:center;">
+          <img src="PE3image1.png" alt="基準配置例" 
+               style="max-width:100%; border-radius:12px; box-shadow:0 6px 18px rgba(2,6,23,0.6);">
+        </div>
+
+        <h2>解析例（5秒）</h2>
+        <p>横から: Test03.mp4<br>上から: Test032.mp4</p>
+
+        <!-- <p style="margin-top:20px;">
+          <a href="index.html#research" class="btn ghost">← 戻る</a>
+        </p> -->
+        <h2>研究例</h2>
+        <div class="video-wrapper">
+          <iframe src="https://www.youtube.com/embed/krXXW6wtNzA" 
+                  title="研究動画 詳細版" frameborder="0"
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                  allowfullscreen></iframe>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <div class="container">© <span id="year"></span> Yukitake Wakamiya.</div>
+  </footer>
+
+  <script src="script.js"></script>
+</body>
+</html>
