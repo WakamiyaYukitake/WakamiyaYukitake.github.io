@@ -60,6 +60,13 @@
     .mission-box strong {
       color: #e6eef8;
     }
+    .mission-box a {
+        color: var(--blue);
+        text-decoration: none;
+    }
+    .mission-box a:hover {
+        text-decoration: underline;
+    }
     
     /* 動画の埋め込み用スタイル */
     .video-grid {
@@ -157,13 +164,13 @@
           <h3>テーマ案３：解析結果を活用した新しい防災情報可視化システムの開発</h3>
           <p>
             <strong>【概要】</strong><br>
-            シミュレーションで得られた「建物にかかる力」や「浸水深」といった物理的な解析結果と、PLATEAUが持つ<strong>「建物の構造種別（木造、鉄筋コンクリート造など）」や「築年数」といった属性情報を組み合わせ</strong>、「どの建物が倒壊しやすいか」といった、より詳細なリスクを評価・可視化するシステムの開発に挑戦します。
+            シミュレーションで得られた「建物にかかる力」や「浸水深」といった物理的な解析結果と、PLATEAUが持つ<strong>「建物の構造種別（木造、鉄筋コンクリート造など）」や「築年数」といった属性情報を組み合わせ</strong>、「どの建物が倒壊しやすいか」といった、より詳細なリスクを評価・可可視化するシステムの開発に挑戦します。
           </p>
           <h4>目的</h4>
           <ul>
             <li>物理シミュレーションの結果と、都市の属性データを統合し、建物ごとの脆弱性を評価する新たなリスク指標を作成します。</li>
             <li>Pythonなどを用いてデータ処理・分析を行い、各建物にリスクスコアを付与する手法を構築します。</li>
-            <li>算出したリスクを、Web上で3D都市モデルを閲覧できる**「PLATEAU View」**に重畳表示し、インタラクティブな可視化を試みます。</li>
+            <li>算出したリスクを、Web上で3D都市モデルを閲覧できる<strong>「PLATEAU View」</strong>に重畳表示し、インタラクティブな可視化を試みます。</li>
           </ul>
           <h4>開発アプローチ</h4>
           <p>解析結果から得られる「建物ごとの最大流体力」と、PLATEAUの属性情報から得られる「構造上の脆弱性（例：木造は脆弱性が高い）」を掛け合わせることで、独自の「倒壊危険度スコア」を算出します。</p>
@@ -176,6 +183,24 @@
           </ol>
         </div>
 
+        <h2>連絡先・関連リンク</h2>
+        <div class="mission-box">
+          <p>
+            演習内容について質問などがあれば、以下の連絡先まで気軽にメールしてください。
+          </p>
+          <ul>
+            <li><strong>連絡先 E-mail:</strong> <a href="mailto:bb54125213@ms.nagasaki-u.ac.jp">bb54125213@ms.nagasaki-u.ac.jp</a></li>
+          </ul>
+          <p>
+            演習で用いるソフトウェアやデータについての公式サイトです。
+          </p>
+          <ul>
+            <li><strong>PLATEAU:</strong> <a href="https://www.mlit.go.jp/plateau/" target="_blank" rel="noopener noreferrer">https://www.mlit.go.jp/plateau/</a></li>
+            <li><strong>DualSPHysics:</strong> <a href="https://dual.sphysics.org/" target="_blank" rel="noopener noreferrer">https://dual.sphysics.org/</a></li>
+            <li><strong>DesignSPHysics:</strong> <a href="https://design.sphysics.org/" target="_blank" rel="noopener noreferrer">https://design.sphysics.org/</a></li>
+          </ul>
+        </div>
+
         <h2>卒業研究「PLATEAUを用いた粒子法による河川氾濫解析」の解析結果動画</h2>
         <p>私の研究内容です。参考にしてください。</p>
         <div class="video-wrapper">
@@ -186,7 +211,7 @@
   </main>
 
   <footer class="site-footer">
-    <div class="container">© <span id="year"></span> Yukitake Wakamiya.</div>
+    <div class="container">© <span id="year"></span> Wakamiya Yukitake.</div>
   </footer>
 
   <script src="script.js"></script>
