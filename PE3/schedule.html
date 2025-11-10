@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>プロジェクト演習Ⅲ - スケジュール</title>
+    
+    <link rel="stylesheet" href="../style.css">
+    
+    <style>
+        /* CSSファイルにない、スケジュール用のスタイルを追記 */
+        .schedule-card {
+            background: linear-gradient(180deg, rgba(255, 255, 255, 0.03), rgba(255, 255, 255, 0.01));
+            border: 1px solid rgba(255, 255, 255, 0.04);
+            padding: 20px 24px;
+            border-radius: 12px;
+            box-shadow: 0 8px 24px rgba(2, 6, 23, 0.7);
+            margin-bottom: 20px;
+            display: flex;
+            align-items: flex-start;
+            gap: 20px;
+        }
+        .schedule-date {
+            flex-shrink: 0;
+            width: 130px; 
+            text-align: right;
+        }
+        .schedule-date .session {
+            font-weight: 700;
+            font-size: 18px;
+            color: var(--blue); /* CSS変数を活用 */
+        }
+        .schedule-date .date {
+            font-size: 14px;
+            color: var(--muted);
+            line-height: 1.3;
+        }
+        .schedule-details {
+            border-left: 2px solid var(--purple); /* CSS変数を活用 */
+            padding-left: 20px;
+        }
+        .schedule-details h3 {
+            margin: 0 0 8px 0;
+            color: #fff;
+        }
+        .schedule-details p {
+            margin: 0 0 10px 0;
+            color: var(--muted);
+            font-size: 15px;
+        }
+        .schedule-details ul {
+            margin: 0;
+            padding-left: 18px;
+            font-size: 15px;
+            color: var(--muted);
+        }
+        .schedule-details li {
+            margin-bottom: 5px;
+        }
+        
+        /* 最終発表会用の特別スタイル */
+        .schedule-card.final {
+            border-color: var(--green);
+            background: linear-gradient(180deg, rgba(0, 184, 148, 0.05), rgba(0, 184, 148, 0.01));
+        }
+        .schedule-card.final .session {
+            color: var(--green);
+        }
+        .schedule-card.final .schedule-details {
+            border-left-color: var(--green);
+        }
+
+        /* レスポンシブ対応 */
+        @media (max-width: 600px) {
+            .schedule-card { 
+                flex-direction: column; 
+                gap: 12px; 
+            }
+            .schedule-date { 
+                width: auto; 
+                text-align: left; 
+            }
+            .schedule-details { 
+                border-left: none; 
+                padding-left: 0; 
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <header class="site-header">
+        <div class="container header-inner">
+            <div class="logo">WY</div>
+            <nav class="site-nav">
+                <a href="#schedule" class="active">Schedule</a>
+            </nav>
+            <button class="menu-btn" aria-label="Open menu">☰</button>
+        </div>
+    </header>
+
+    <main>
+        <div class="container">
+
+            <section class="hero-inner" style="padding-top: 60px; padding-bottom: 40px; text-align: left;">
+                <h1 class="hero-title" style="font-size: 24px;">プロジェクト演習Ⅲ 瀬戸研究室 スケジュール</h1>
+                <p class="hero-lead" style="text-align: left; margin: 12px 0 0 0; max-width: 100%;">
+                    多少の変動はあると思います。
+                </p>
+            </section>
+
+            <section id="schedule" class="section in-view">
+                
+                <div class="schedule-card">
+                    <div class="schedule-date">
+                        <div class="session">第1回</div>
+                        <div class="date">11/10 (月)<br>16:10~</div>
+                    </div>
+                    <div class="schedule-details">
+                        <h3>チーム決め</h3>
+                        <p>チーム決め、顔合わせ、プロジェクト概要説明</p>
+                    </div>
+                </div>
+
+                <div class="schedule-card">
+                    <div class="schedule-date">
+                        <div class="session">第2回</div>
+                        <div class="date">11/17 (月)<br>16:10~</div>
+                    </div>
+                    <div class="schedule-details">
+                        <h3>講義：粒子法・SPH法とPLATEAU</h3>
+                        <p>シミュレーションの背景にある理論と、3D都市モデル（PLATEAU）について学びます。</p>
+                        <ul>
+                            <li>粒子法・SPH法の基礎理論（なぜ粒子で流体を計算できるか）</li>
+                            <li>3D都市モデル「PLATEAU」とは何か、どう活用できるか</li>
+                            <li>演習で使うDualSPHysicsとParaViewの概要説明</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="schedule-card">
+                    <div class="schedule-date">
+                        <div class="session">第3回</div>
+                        <div class="date">11/25 (火)<br>14:30~</div>
+                    </div>
+                    <div class="schedule-details">
+                        <h3>【重要】環境構築＆ベンチマーク</h3>
+                        <p><strong>DualSPHysics</strong>と<strong>ParaView</strong>をインストールし、各自のPCで動くか、どの程度の速度が出るかをテストします。</p>
+                        <ul>
+                            <li>DualSPHysics, ParaViewのインストール</li>
+                            <li>全員で同じ単純なサンプル(e.g., CaseDambreak)を実行</li>
+                            <li><strong>実行時間を計測し、PCスペックを把握します</strong></li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="schedule-card">
+                    <div class="schedule-date">
+                        <div class="session">第4回</div>
+                        <div class="date">12/8 (月)<br>16:00~</div>
+                    </div>
+                    <div class="schedule-details">
+                        <h3>計画分岐＆テーマ決定</h3>
+                        <p>ベンチマーク結果を基に、テーマと役割を決定します。</p>
+                        <ul>
+                            <li><strong>Plan A (全員のPCが高速):</strong> 全員で解析。興味に応じて「他都市解析」or「浮遊物解析」。</li>
+                            <li><strong>Plan B (PCスペックに差がある):</strong>
+                                <ul>
+                                    <li><strong>解析班 (1-2名):</strong> 高速PCで Plan A のテーマを実施。</li>
+                                    <li><strong>実験班 (2-3名):</strong> 「3Dプリンタ」でモデルを作成し、物理実験を行う。</li>
+                                </ul>
+                            </li>
+                            <li>最終テーマを「<strong>シミュレーションと物理実験の比較</strong>」に設定します。</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="schedule-card">
+                    <div class="schedule-date">
+                        <div class="session">第5回</div>
+                        <div class="date">12/19 (金)<br>16:10~</div>
+                    </div>
+                    <div class="schedule-details">
+                        <h3>データ準備とモデル作成</h3>
+                        <p>各班、解析/実験の準備を進めます。</p>
+                        <ul>
+                            <li><strong>解析班:</strong> PLATEAUデータ(STL) or 浮遊物(STL)の準備。XMLケースファイル作成開始。</li>
+                            <li><strong>実験班:</strong> 比較対象の3Dモデル作成、3Dプリンタでのスライス・印刷開始。</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="schedule-card">
+                    <div class="schedule-date">
+                        <div class="session">第6回</div>
+                        <div class="date">12/22 (月)<br>16:10~</div>
+                    </div>
+                    <div class="schedule-details">
+                        <h3>解析・実験の実行（中間）</h3>
+                        <p>シミュレーション実行と、物理実験の実施。</p>
+                        <ul>
+                            <li><strong>解析班:</strong> シミュレーション実行、エラーデバッグ。</li>
+                            <li><strong>実験班:</strong> 印刷したモデルで水流実験、スマホ等で動画撮影。</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="schedule-card">
+                    <div class="schedule-date">
+                        <div class="session">第7回</div>
+                        <div class="date">12/26 (金)<br>16:10~</div>
+                    </div>
+                    <div class="schedule-details">
+                        <h3>結果の可視化と分析</h3>
+                        <p>出てきた結果を比較・分析します。</p>
+                        <ul>
+                            <li><strong>解析班:</strong> ParaViewでの結果可視化、動画作成。</li>
+                            <li><strong>実験班:</strong> 実験動画の分析。</li>
+                            <li><strong>全員:</strong> 解析結果と実験結果を並べて比較し、考察を開始。</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="schedule-card">
+                    <div class="schedule-date">
+                        <div class="session">第8回</div>
+                        <div class="date">1/5 (月)<br>16:10~</div>
+                    </div>
+                    <div class="schedule-details">
+                        <h3>最終調整＆リハーサル</h3>
+                        <p>発表会に向け、資料を完成させ、発表練習を行います。</p>
+                        <ul>
+                            <li>発表スライド（背景, 目的, 手法, 結果, 考察）の完成</li>
+                            <li>発表リハーサルと質疑応答の練習</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="schedule-card final">
+                    <div class="schedule-date">
+                        <div class="session">最終発表会</div>
+                        <div class="date">1/27 (火)<br>TBD</div>
+                    </div>
+                    <div class="schedule-details">
+                        <h3>成果発表会</h3>
+                        <p>8週間の成果を発表します。解析と実験の比較（あるいは解析同士の比較）について、自分たちの言葉で説明します。</p>
+                    </div>
+                </div>
+
+            </section>
+        </div>
+    </main>
+
+    <footer class="site-footer">
+        <div class="container">
+            <p class="small-muted">&copy; 2025 プロジェクト演習Ⅲ</p>
+        </div>
+    </footer>
+
+    <script>
+        // スクロールでセクションを表示 (CSSの .in-view を利用)
+        const sections = document.querySelectorAll('.section');
+        const observer = new IntersectionObserver(entries => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.classList.add('in-view');
+                }
+            });
+        }, { threshold: 0.1 });
+        sections.forEach(section => { observer.observe(section); });
+
+        // モバイルメニューのトグル (CSSの .open を利用)
+        const menuBtn = document.querySelector('.menu-btn');
+        const nav = document.querySelector('.site-nav');
+        menuBtn.addEventListener('click', () => {
+            nav.classList.toggle('open');
+        });
+    </script>
+
+</body>
+</html>
