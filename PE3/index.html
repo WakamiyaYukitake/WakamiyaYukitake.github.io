@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>プロジェクト演習Ⅲ 瀬戸研究室</title>
+    
+    <link rel="stylesheet" href="../style.css">
+    
+    <style>
+        /* このページ固有の微調整
+         カード全体をリンクにするため、aタグのデフォルトスタイルをリセットします。
+        */
+        .projects-grid a.card {
+            text-decoration: none;
+            color: inherit;
+            transition: transform 300ms, box-shadow 300ms;
+        }
+        .projects-grid a.card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 12px 28px rgba(2, 6, 23, 0.8);
+        }
+    </style>
+</head>
+
+<body>
+
+    <header class="site-header">
+        <div class="container header-inner">
+            <a href="index.html" class="logo">WY</a>
+            </div>
+    </header>
+
+    <main>
+        <section class="section--full">
+            <div class="container hero-inner">
+                <h1 class="hero-title">プロジェクト演習Ⅲ 瀬戸研究室</h1>
+                <p class="hero-lead">
+                    プロジェクト演習Ⅲ（瀬戸研究室）に関する資料やリンクをまとめたハブページです。
+                </p>
+            </div>
+        </section>
+
+        <section class="section" id="contents">
+            <div class="container">
+                <h2 style="font-size: 24px; color: #fff;">
+                    <span style="color: var(--blue);">/</span>
+                    コンテンツ一覧
+                </h2>
+                
+                <div class="projects-grid">
+
+                    <a href="https://wakamiyayukitake.github.io/PE3.html" class="card">
+                        <div class="thumb" style="background-color: var(--blue); background-image: url('');"></div>
+                        <h3 style="margin: 0 0 8px 0;">提案内容</h3>
+                        <p class="small-muted" style="margin: 0;">プロジェクトの提案</p>
+                    </a>
+
+                    <a href="https://wakamiyayukitake.github.io/PE3/schedule.html" class="card">
+                        <div class="thumb" style="background-color: var(--purple); background-image: url('');"></div>
+                        <h3 style="margin: 0 0 8px 0;">スケジュール</h3>
+                        <p class="small-muted" style="margin: 0;">スケジュール一覧</p>
+                    </a>
+
+                    <a href="https://wakamiyayukitake.github.io/SPH/SPH.html" class="card">
+                        <div class="thumb" style="background-color: var(--green); background-image: url('');"></div>
+                        <h3 style="margin: 0 0 8px 0;">粒子法及びSPH法について</h3>
+                        <p class="small-muted" style="margin: 0;">DualSPHysicsの基礎となる概要</p>
+                    </a>
+
+                    <a href="https://github.com/DualSPHysics/DualSPHysics/wiki" class="card">
+                        <div class="thumb" style="background-color: var(--blue); background-image: url('');"></div>
+                        <h3 style="margin: 0 0 8px 0;">DualSPHysics Wiki</h3>
+                        <p class="small-muted" style="margin: 0;">DualSPHysicsの概要</p>
+                    </a>
+
+                    <a href="https://www.mlit.go.jp/plateau/" class="card">
+                        <div class="thumb" style="background-color: var(--purple); background-image: url('');"></div>
+                        <h3 style="margin: 0 0 8px 0;">PLATEAU</h3>
+                        <p class="small-muted" style="margin: 0;">PLATEAUホームページ</p>
+                    </a>
+
+                    <!-- <a href="https://wakamiyayukitake.github.io/SPH/SPH.html" class="card">
+                        <div class="thumb" style="background-color: var(--green); background-image: url('');"></div>
+                        <h3 style="margin: 0 0 8px 0;">粒子法及びSPH法について</h3>
+                        <p class="small-muted" style="margin: 0;">DualSPHysicsの基礎となる概要</p>
+                    </a> -->
+
+                    </div></div></section>
+
+    </main>
+
+    <footer class="site-footer">
+        <div class="container">
+            <p class="small-muted">&copy; 2025 Wakamiya Yukitake.</p>
+        </div>
+    </footer>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const sections = document.querySelectorAll('.section');
+            
+            // IntersectionObserverが使えるかチェック
+            if ('IntersectionObserver' in window) {
+                const observer = new IntersectionObserver((entries) => {
+                    entries.forEach(entry => {
+                        // 画面内に入ったら .in-view クラスを追加
+                        if (entry.isIntersecting) {
+                            entry.target.classList.add('in-view');
+                            observer.unobserve(entry.target); // 一度表示したら監視を解除
+                        }
+                    });
+                }, { threshold: 0.1 }); // 10%見えたら実行
+
+                sections.forEach(section => {
+                    observer.observe(section);
+                });
+            } else {
+                // 古いブラウザ用のフォールバック
+                sections.forEach(section => {
+                    section.classList.add('in-view');
+                });
+            }
+        });
+    </script>
+
+</body>
+</html>
