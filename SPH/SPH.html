@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>粒子法とSPH法の技術解説</title>
+    <link rel="stylesheet" href="../style.css">
+    
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css" integrity="sha384-nB0miv6/jLIovAWD/eY8UDFC/C8hDlcSzne/3vOAXGbgFquDE8oAp8C1/bS/gBWM" crossorigin="anonymous">
+    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js" integrity="sha384-7XO8r1B3yL3Gq/OMHdenbGWKjV1o/Qj/eRS2faP0/3DSDNRiht6pG4NGG/L1R0sH" crossorigin="anonymous"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js" integrity="sha384-43gviWU0YVjaDtb/Gf1ESWGuvS87LPh8cskNEmMAMrUIF0NqcQY1WYZP/P/Qp/G2" crossorigin="anonymous"
+        onload="renderMathInElement(document.body, {
+            delimiters: [
+                {left: '$$', right: '$$', display: true},
+                {left: '$', right: '$', display: false},
+                {left: '\\[', right: '\\]', display: true},
+                {left: '\\(', right: '\\)', display: false}
+            ]
+        });"></script>
+
+    <style>
+        /* KaTeXの数式が横にはみ出た場合にスクロールさせる */
+        .katex-display {
+            overflow-x: auto;
+            overflow-y: hidden;
+            padding: 4px;
+        }
+        /* 本文中の数式が背景と馴染むように */
+        .katex {
+            color: #e6eef8;
+        }
+        /* 説明文と数式の間のマージン */
+        .formula-block {
+            margin: 24px 0;
+        }
+        p {
+            margin-bottom: 16px;
+        }
+        h3 {
+            border-bottom: 2px solid var(--blue);
+            padding-bottom: 8px;
+            margin-top: 32px;
+            margin-bottom: 16px;
+        }
+        code {
+            background: rgba(255,255,255,0.05);
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-family: monospace;
+        }
+    </style>
+</head>
+<body>
+
+    <header class="site-header">
+        <div class="container header-inner">
+            <div class="logo">流体解析技術</div>
+            <nav class="site-nav" id="site-nav">
+                <a href="#particle-method">粒子法とは</a>
+                <a href="#sph-method">SPH法と数式</a>
+            </nav>
+            <button class="menu-btn" id="menu-btn" aria-label="Toggle navigation" aria-controls="site-nav" aria-expanded="false">☰</button>
+        </div>
+    </header>
+
+    <section class="section--full hero-inner">
+        <h1 class="hero-title">粒子法（Particle Method）と<br>SPH法の解説</h1>
+        <p class="hero-lead">
+            河川氾濫解析などの流体シミュレーションで注目される粒子法と、その代表的な手法であるSPH法（Smoothed Particle Hydrodynamics）の基本原理を、具体的な数式と共に解説する。
+        </p>
+    </section>
+
+    <div class="container">
+
+        <section id="particle-method" class="section">
+            <h2>粒子法 (Particle Method) とは</h2>
+            <p>
+                粒子法は、連続体の数値解析法の一つであり、解析対象である流体などを、任意の大きさを持つ**粒子の集合体**として表現する手法である。
+            </p>
+
+            <h3>格子法との比較</h3>
+            <p>
+                従来広く用いられてきた格子法（有限体積法や有限要素法など）は、空間内に固定された格子点を計算点とする。これは「オイラー的視点」に基づく。対して、粒子法は空間内を**移動する粒子そのもの**を計算点とする。これは「ラグランジュ的視点」に基づいている。
+            </p>
+            <ul>
+                <li>
+                    <strong>前処理（モデル生成）:</strong> 3次元の複雑な地形（例えば都市モデル）を扱う場合、格子法では格子生成（メッシュ作成）に多くの時間が費やされる。粒子法では粒子を配置する「粒子生成」のみであるため、格子生成より容易である。
+                </li>
+                <li>
+                    <strong>移流項の扱い:</strong> 格子法（オイラー的視点）では、支配方程式（ナビエ・ストークス方程式）の移流項を離S散化する際に、数値拡散や数値振動といった問題が生じ、高精度な計算が困難になる場合がある。
+                </li>
+                <li>
+                    <strong>粒子法の利点:</strong> 粒子法（ラグランジュ的視点）では、粒子が移動することで流れを表現するため、移流項を陽に解く必要がない。これにより、移流項の離散化に伴う数値拡散や数値振動の問題が原理的に生じない。
+                </li>
+            </ul>
+
+            <h3>粒子法の課題</h3>
+            <p>
+                一方で、粒子法は計算点が移動するため、圧力分布に非物理的な擾乱（ノイズ）が生じやすいという課題がある。この擾乱を減衰させるために、流体を「弱圧縮性（わずかに縮む性質を持つ）」として扱うことが多いが、この手法は非物理的なエネルギーの減衰や体積の減少をもたらす可能性も指摘されている。
+            </p>
+        </section>
+
+        <hr style="border-color: rgba(255,255,255,0.05); margin: 40px 0;">
+
+        <section id="sph-method" class="section">
+            <h2>SPH法 (Smoothed Particle Hydrodynamics) と数式</h2>
+            <p>
+                SPH法は粒子法の一つであり、各粒子が**影響範囲（影響半径）**を持つと考える。ある粒子の物理量は、その影響範囲内に存在する近傍の粒子から影響を受けて決定される。この影響の度合いを定義するのが「カーネル関数」である。
+            </p>
+
+            <h3>1. カーネル関数による物理量の近似</h3>
+            <p>
+                ある位置ベクトル $r$ における物理量 $f(r)$ は、カーネル関数 $W$ を用いて、影響範囲内の積分として以下のように定義される。
+            </p>
+            <div class="formula-block">
+                $$ f(r) = \int f(r') W(|r-r'|, h) dr' $$
+                <center>（式1）</center>
+            </div>
+            <p>
+                ここで $h$ は粒子の影響範囲を定義する「平滑化長さ」である。
+                これをコンピュータで計算するために、粒子 $a$ とその近傍の粒子 $b$ を用いて離散化する。粒子 $b$ の体積を $\Delta V_b$、質量を $m_b$、密度を $\rho_b$ とすると、 $\Delta V_b = m_b / \rho_b$ の関係から、粒子 $a$ の物理量 $f(r_a)$ は以下の和（サメーション）として近似できる。
+            </p>
+            <div class="formula-block">
+                $$ f(r_a) = \sum_b f(r_b) \frac{m_b}{\rho_b} W(|r_a - r_b|, h) $$
+                <center>（式3）</center>
+            </div>
+            <p>
+                カーネル関数 $W$ にはいくつかの種類があるが、本研究のPDFでは Wendland kernel が用いられている。 $q$ は粒子間の無次元距離 ($q=r/h$) である。
+            </p>
+            <div class="formula-block">
+                $$ W(r,h)=\alpha_{D} \begin{cases} (1-\frac{q}{2})^{4}(2q+1) & 0 \le q \le 2 \\ 0 & q > 2 \end{cases} $$
+                <center>（式4）</center>
+            </div>
+
+            <h3>2. 支配方程式の離散化</h3>
+            <p>
+                SPH法では、流体の運動を記述する「ナビエ・ストークス方程式」と「連続式」を、前述のカーネル近似を用いて離散化する。
+            </p>
+
+            <h4>運動量保存則（ナビエ・ストークス方程式）</h4>
+            <p>
+                流体の運動は、圧力 $p$、動粘性係数 $\nu$、重力加速度 $g$ によって記述される。SPH法では、これを密度 $\rho$ で割った以下の形式（式7）で扱うことが多い。
+            </p>
+            <div class="formula-block">
+                $$ \frac{du}{dt} = - \frac{1}{\rho} \nabla p + \nu \nabla^2 u + g $$
+                <center>（式7）</center>
+            </div>
+            <p>
+                この式をSPH法に基づき離散化すると、粒子 $a$ の速度変化（加速度） $\frac{du_a}{dt}$ は、近傍の粒子 $b$ との相互作用として以下の（式8）で表される。
+            </p>
+            <div class="formula-block">
+                $$ \frac{du_a}{dt} = - \sum_b m_b \left( \frac{p_b}{\rho_b^2} + \frac{p_a}{\rho_a^2} + \Pi_{ab} \right) \nabla W(|r_a - r_b|, h) + g $$
+                <center>（式8）</center>
+            </div>
+            <p>
+                ここで、$\Pi_{ab}$ は数値的な安定性を確保するために導入される「人工粘性項」であり、粒子同士が近づきすぎた場合に反発力として機能する。
+            </p>
+            <div class="formula-block">
+                $$ \Pi_{ab} = \begin{cases} \frac{-\alpha \bar{c}_{ab} \mu_{ab}}{\bar{\rho}_{ab}} & v_{ab} \cdot r_{ab} < 0 \\ 0 & v_{ab} \cdot r_{ab} > 0 \end{cases} $$
+                <center>（式9）</center>
+            </div>
+            <p>
+                （ $v_{ab} \cdot r_{ab} < 0$ は粒子が互いに接近していることを示す）
+            </p>
+
+            <h4>連続式（質量保存則）</h4>
+            <p>
+                流体の密度 $\rho$ の時間変化は、連続式によって記述される。粒子 $a$ の密度変化 $\frac{d\rho_a}{dt}$ は、近傍粒子 $b$ との速度差 $u_a - u_b$ を用いて、以下の（式10）で表される。
+            </p>
+            <div class="formula-block">
+                $$ \frac{d\rho_a}{dt} = - \rho_a \sum_b \frac{m_b}{\rho_b} (u_a - u_b) \cdot \nabla W(|r_a - r_b|, h) $$
+                <center>（式10）</center>
+            </div>
+            
+            <h4>状態方程式</h4>
+            <p>
+                SPH法では流体を「弱圧縮性」として扱うため、密度 $\rho$ と圧力 $p$ を関係づける「状態方程式」が必要となる。以下の（式11）が用いられることが多い。
+            </p>
+            <div class="formula-block">
+                $$ p = \frac{c_0^2 \rho_0}{\gamma} \left( \left( \frac{\rho}{\rho_0} \right)^\gamma - 1 \right) \quad (\gamma = 7) $$
+                <center>（式11）</center>
+            </div>
+            <p>
+                ここで $c_0$ は基準となる音速、 $\rho_0$ は基準密度である。圧力 $p$ は密度の変化（圧縮）によって生じる力として計算される。
+            </p>
+            
+            <h3>3. 物理量の計算</h3>
+            <p>
+                シミュレーションの結果として、特定の点（例えば観測点 $a$）における流速 $v_a$ や圧力 $p_a$ を知りたい場合がある。これらは、その点に隣接する流体粒子 $b$ の速度 $v_b$ や圧力 $p_b$ をカーネル関数で重み付け平均することで求められる。
+            </p>
+            <div class="formula-block">
+                $$ v_a = \frac{\sum_b v_b W(|r_a - r_b|, h)}{\sum_b W(|r_a - r_b|, h)} $$
+                <center>（式12）</center>
+            </div>
+            <div class="formula-block">
+                $$ p_a = \frac{\sum_b p_b W(|r_a - r_b|, h)}{\sum_b W(|r_a - r_b|, h)} $$
+                <center>（式13）</center>
+            </div>
+            <p>
+                このように、SPH法はカーネル関数という重み付け関数を用いて、粒子の相互作用を計算し、流体の複雑な挙動をシミュレーションする手法である。
+            </p>
+
+        </section>
+
+    </div><footer class="site-footer">
+        <p class="small-muted">© 2025 Fluid Dynamics Analysis. All rights reserved.</p>
+    </footer>
+
+    <script>
+        // Mobile menu toggle
+        const menuBtn = document.getElementById('menu-btn');
+        const siteNav = document.getElementById('site-nav');
+        if (menuBtn && siteNav) {
+            menuBtn.addEventListener('click', () => {
+                const isOpen = siteNav.classList.toggle('open');
+                menuBtn.setAttribute('aria-expanded', isOpen);
+            });
+        }
+
+        // Scroll-in-view animation
+        const sections = document.querySelectorAll('.section');
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.classList.add('in-view');
+                }
+            });
+        }, {
+            threshold: 0.1
+        });
+
+        sections.forEach(section => {
+            observer.observe(section);
+        });
+    </script>
+</body>
+</html>
