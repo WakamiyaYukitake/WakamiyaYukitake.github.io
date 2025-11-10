@@ -24,16 +24,22 @@
         /* 数式ブロックのマージン */
         .formula-block {
             margin: 24px 0;
-            /* <center>タグを削除したため、
-               text-align: center; は不要になりました。
-               MathJaxが displayMath ($$) を自動で中央揃えにします。
-            */
+            /* ▼ スマホ対応: 横スクロールを削除 ▼ */
         }
-        /* MathJaxが生成する数式コンテナがはみ出た場合にスクロールさせる */
+        
+        /* MathJaxが生成する数式コンテナ */
         mjx-container[jax="SVG"][display="true"] {
-            overflow-x: auto;
-            overflow-y: hidden;
+            /* ▼ スマホ対応: 横スクロールを削除 ▼ */
         }
+
+        /* ▼ スマホ対応: 画面幅が600px以下の場合 ▼ */
+        @media (max-width: 600px) {
+            .formula-block {
+                /* ▼ 数式を少し小さくして収まりやすくする ▼ */
+                font-size: 90%;
+            }
+        }
+
         p {
             margin-bottom: 16px;
         }
@@ -50,7 +56,6 @@
             font-family: monospace;
         }
         
-        /* ▼ 修正: strongの代わりに色と太さで強調 ▼ */
         .highlight {
             color: var(--blue);
             font-weight: 600; 
@@ -71,9 +76,110 @@
             color: #fff;
             text-decoration: underline;
         }
+
+        /* ▼ 図のスタイル ▼ */
+        .illustration {
+            max-width: 600px; /* 図の最大幅 */
+            margin: 20px auto; /* 中央揃え */
+            padding: 10px;
+            background: rgba(255,255,255,0.02);
+            border-radius: 8px;
+            border: 1px solid rgba(255,255,255,0.05);
+            text-align: center;
+        }
+        .illustration p {
+            font-style: italic;
+            color: var(--muted);
+            font-size: 14px;
+            margin-bottom: 0;
+        }
+        .illustration svg {
+            max-width: 100%;
+        }
+        
+        /* ▼ 図1用スタイル ▼ */
+        .comparison-box {
+            display: flex;
+            justify-content: space-around;
+            align-items: flex-start;
+            flex-wrap: wrap; /* スマホ用に折り返し */
+        }
+        .comparison-item {
+            width: 45%;
+            min-width: 150px; /* 最小幅 */
+            text-align: center;
+            margin-bottom: 15px;
+        }
+        .grid-container {
+            display: grid;
+            /* 8x8 グリッドに変更 */
+            grid-template-columns: repeat(8, 1fr);
+            border: 1px solid var(--muted);
+            margin-top: 10px;
+            width: 160px; /* 8x20px */
+            height: 160px; /* 8x20px */
+            margin-left: auto;
+            margin-right: auto;
+            background: #fff; /* 背景を白に */
+        }
+        .grid-cell {
+            width: 100%;
+            height: 100%;
+            border: 1px solid rgba(0,0,0,0.1); /* グリッド線を薄い黒に */
+            box-sizing: border-box; 
+            background: transparent; /* デフォルトは透明 */
+        }
+        /* ▼ 図1 色定義 (画像1参考) ▼ */
+        .grid-cell.water-deep { background: #0b5fff; }
+        .grid-cell.water-mid { background: #5089ff; }
+        .grid-cell.water-shallow { background: #a0c0ff; }
+        .grid-cell.water-splash { background: #d0e0ff; }
+
+        .particle-container {
+            position: relative;
+            width: 160px;
+            height: 160px;
+            border: 1px solid var(--muted);
+            margin: 10px auto 0 auto;
+        }
+        .particle {
+            position: absolute;
+            width: 12px;
+            height: 12px;
+            background: var(--blue);
+            border-radius: 50%;
+        }
+
+        /* SVG図用共通スタイル */
+        .svg-text {
+            font-size: 12px;
+            fill: #fff;
+        }
+        .svg-text-muted {
+            font-size: 12px;
+            fill: var(--muted);
+        }
+        .particle-a { fill: var(--blue); stroke: #fff; stroke-width: 1px; }
+        .particle-b { fill: rgba(255,255,255,0.4); }
+        .kernel-radius { fill: none; stroke: var(--muted); stroke-dasharray: 4 2; }
+        .arrow-green { stroke: var(--green); stroke-width: 1.5; marker-end: url(#arrowhead-green); }
+        .arrow-purple { stroke: var(--purple); stroke-width: 2; marker-end: url(#arrowhead-purple); }
+        .arrow-muted { stroke: var(--muted); stroke-width: 1.5; marker-end: url(#arrowhead-muted); }
+        .arrow-muted-bi { stroke: var(--muted); stroke-width: 1.5; marker-end: url(#arrowhead-muted); marker-start: url(#arrowhead-muted-start); }
+        .point-a { stroke: var(--blue); stroke-width: 3; }
+
     </style>
 </head>
 <body>
+
+    <svg width="0" height="0" style="position:absolute; overflow:hidden;">
+        <defs>
+            <marker id="arrowhead-green" markerWidth="5" markerHeight="3.5" refX="5" refY="1.75" orient="auto"><polygon points="0 0, 5 1.75, 0 3.5" fill="var(--green)" /></marker>
+            <marker id="arrowhead-purple" markerWidth="5" markerHeight="3.5" refX="5" refY="1.75" orient="auto"><polygon points="0 0, 5 1.75, 0 3.5" fill="var(--purple)" /></marker>
+            <marker id="arrowhead-muted" markerWidth="5" markerHeight="3.5" refX="5" refY="1.75" orient="auto"><polygon points="0 0, 5 1.75, 0 3.5" fill="var(--muted)" /></marker>
+            <marker id="arrowhead-muted-start" markerWidth="5" markerHeight="3.5" refX="0" refY="1.75" orient="auto"><polygon points="5 0, 0 1.75, 5 3.5" fill="var(--muted)" /></marker>
+        </defs>
+    </svg>
 
     <header class="site-header">
         <div class="container header-inner">
@@ -105,6 +211,50 @@
             <p>
                 従来広く用いられてきた格子法（有限体積法や有限要素法など）は、空間内に固定された格子点を計算点とする。 これは「オイラー的視点」に基づく。 対して、粒子法は空間内を<span class="highlight">移動する粒子そのもの</span>を計算点とする。 これは「ラグランジュ的視点」に基づいている。
             </p>
+            
+            <div class="illustration comparison-box">
+                <div class="comparison-item">
+                    <strong>格子法 (オイラー)</strong>
+                    <div class="grid-container">
+                        <div class="grid-cell"></div><div class="grid-cell"></div><div class="grid-cell"></div><div class="grid-cell"></div><div class="grid-cell"></div><div class="grid-cell"></div><div class="grid-cell"></div><div class="grid-cell water-splash"></div>
+                        <div class="grid-cell"></div><div class="grid-cell"></div><div class="grid-cell"></div><div class="grid-cell"></div><div class="grid-cell"></div><div class="grid-cell"></div><div class="grid-cell"></div><div class="grid-cell water-deep"></div>
+                        <div class="grid-cell"></div><div class="grid-cell"></div><div class="grid-cell"></div><div class="grid-cell"></div><div class="grid-cell"></div><div class="grid-cell water-shallow"></div><div class="grid-cell water-mid"></div><div class="grid-cell water-deep"></div>
+                        <div class="grid-cell"></div><div class="grid-cell"></div><div class="grid-cell water-shallow"></div><div class="grid-cell water-shallow"></div><div class="grid-cell water-shallow"></div><div class="grid-cell water-mid"></div><div class="grid-cell water-mid"></div><div class="grid-cell water-deep"></div>
+                        <div class="grid-cell water-mid"></div><div class="grid-cell water-mid"></div><div class="grid-cell water-mid"></div><div class="grid-cell water-mid"></div><div class="grid-cell water-mid"></div><div class="grid-cell water-mid"></div><div class="grid-cell water-mid"></div><div class="grid-cell water-deep"></div>
+                        <div class="grid-cell water-deep"></div><div class="grid-cell water-deep"></div><div class="grid-cell water-deep"></div><div class="grid-cell water-deep"></div><div class="grid-cell water-deep"></div><div class="grid-cell water-deep"></div><div class="grid-cell water-deep"></div><div class="grid-cell water-deep"></div>
+                        <div class="grid-cell water-deep"></div><div class="grid-cell water-deep"></div><div class="grid-cell water-deep"></div><div class="grid-cell water-deep"></div><div class="grid-cell water-deep"></div><div class="grid-cell water-deep"></div><div class="grid-cell water-deep"></div><div class="grid-cell water-deep"></div>
+                        <div class="grid-cell water-deep"></div><div class="grid-cell water-deep"></div><div class="grid-cell water-deep"></div><div class="grid-cell water-deep"></div><div class="grid-cell water-deep"></div><div class="grid-cell water-deep"></div><div class="grid-cell water-deep"></div><div class="grid-cell water-deep"></div>
+                    </div>
+                </div>
+                <div class="comparison-item">
+                    <strong>粒子法 (ラグランジュ)</strong>
+                    <div class="particle-container">
+                        <span class="particle" style="top: 80%; left: 8%;"></span>
+                        <span class="particle" style="top: 75%; left: 18%;"></span>
+                        <span class="particle" style="top: 85%; left: 28%;"></span>
+                        <span class="particle" style="top: 70%; left: 35%;"></span>
+                        <span class="particle" style="top: 82%; left: 45%;"></span>
+                        <span class="particle" style="top: 68%; left: 50%;"></span>
+                        <span class="particle" style="top: 80%; left: 60%;"></span>
+                        <span class="particle" style="top: 70%; left: 70%;"></span>
+                        <span class="particle" style="top: 85%; left: 80%;"></span>
+                        <span class="particle" style="top: 60%; left: 80%;"></span>
+                        <span class="particle" style="top: 45%; left: 85%;"></span>
+                        <span class="particle" style="top: 30%; left: 88%;"></span>
+                        <span class="particle" style="top: 15%; left: 85%;"></span>
+                        <span class="particle" style="top: 5%; left: 75%;"></span>
+                        <span class="particle" style="top: 60%; left: 5%;"></span>
+                        <span class="particle" style="top: 55%; left: 20%;"></span>
+                        <span class="particle" style="top: 60%; left: 30%;"></span>
+                        <span class="particle" style="top: 50%; left: 40%;"></span>
+                        <span class="particle" style="top: 55%; left: 60%;"></span>
+                        <span class="particle" style="top: 50%; left: 70%;"></span>
+                        <span class="particle" style="top: 40%; left: 65%;"></span>
+                    </div>
+                </div>
+            </div>
+            <p style="text-align:center; margin-top: 5px; margin-bottom: 20px;" class="small-muted">図1: 格子法（オイラー的視点）と粒子法（ラグランジュ的視点）の比較</p>
+
             <ul>
                 <li>
                     <span class="highlight">前処理（モデル生成）:</span> 3次元の複雑な地形を扱う場合、格子法では格子生成（メッシュ作成）に多くの時間が費やされる。 粒子法では粒子を配置する「粒子生成」のみであるため、格子生成より容易である。
@@ -126,10 +276,32 @@
         <hr style="border-color: rgba(255,255,255,0.05); margin: 40px 0;">
 
         <section id="sph-method" class="section">
-            <h2>SPH法</h2>
+            <h2>SPH法 (Smoothed Particle Hydrodynamics)</h2>
             <p>
-                SPH法 (Smoothed Particle Hydrodynamics)は粒子法の一つであり、各粒子が<span class="highlight">影響範囲</span>を持つと考える。 ある粒子の物理量は、その影響範囲内に存在する近傍の粒子から影響を受けて決定される。 この影響の度合いを定義するのが「カーネル関数」である。
+                SPH法は粒子法の一つであり、各粒子が<span class="highlight">影響範囲</span>を持つと考える。 ある粒子の物理量は、その影響範囲内に存在する近傍の粒子から影響を受けて決定される。 この影響の度合いを定義するのが「カーネル関数」である。
             </p>
+
+            <div class="illustration">
+                <svg width="300" height="200" viewBox="0 0 300 200" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M 50 160 Q 150 20, 250 160" fill="rgba(106, 76, 255, 0.1)" stroke="var(--purple)" stroke-width="2" />
+                    <ellipse cx="150" cy="160" rx="100" ry="20" fill="none" stroke="var(--purple)" stroke-dasharray="4 2" />
+
+                    <line x1="150" y1="170" x2="150" y2="10" class="arrow-muted" />
+                    <text x="155" y="20" class="svg-text">W (重み)</text>
+
+                    <circle cx="150" cy="160" r="6" class="particle-a" />
+                    <text x="135" y="185" class="svg-text">粒子 a</text>
+
+                    <line x1="150" y1="160" x2="250" y2="160" class="arrow-muted-bi" />
+                    <text x="195" y="155" class="svg-text" style="fill:var(--blue); font-weight: 600;">h (影響半径)</text>
+
+                    <circle cx="100" cy="155" r="5" class="particle-b" />
+                    <circle cx="180" cy="165" r="5" class="particle-b" />
+                    <circle cx="220" cy="160" r="5" class="particle-b" />
+                    <circle cx="130" cy="170" r="5" class="particle-b" />
+                </svg>
+                <p>図2: SPH法の基本概念。中心粒子aは影響半径h内の近傍粒子bから重みWを受けて相互作用する。</p>
+            </div>
 
             <h3>カーネル関数による物理量の近似</h3>
             <p>
@@ -154,6 +326,29 @@
                 $$ f(r_a) = \sum_b f(r_b) \frac{m_b}{\rho_b} W(|r_a - r_b|, h) \tag{式3} $$
                 
             </div>
+
+            <div class="illustration">
+                <svg width="300" height="150" viewBox="0 0 300 150" xmlns="http://www.w3.org/2000/svg">
+                    <circle cx="150" cy="75" r="6" class="particle-a" />
+                    <text x="135" y="100" class="svg-text">f(ra) を計算</text>
+                    
+                    <circle cx="100" cy="50" r="5" class="particle-b" />
+                    <line x1="104" y1="53" x2="145" y2="72" class="arrow-green" />
+                    <text x="45" y="45" class="svg-text" style="fill: var(--green);">f(rb) * W</text>
+                    
+                    <circle cx="180" cy="40" r="5" class="particle-b" />
+                    <line x1="177" y1="43" x2="154" y2="71" class="arrow-green" />
+                    
+                    <circle cx="110" cy="110" r="5" class="particle-b" />
+                    <line x1="113" y1="107" x2="146" y2="80" class="arrow-green" />
+
+                    <circle cx="200" cy="95" r="5" class="particle-b" />
+                    <line x1="197" y1="93" x2="155" y2="78" class="arrow-green" />
+                    <text x="205" y="105" class="svg-text" style="fill: var(--green);">f(rb) * W</text>
+                </svg>
+                <p>図3: 粒子aの物理量（式3）は、近傍の粒子bが持つ物理量 $f(rb)$ の重み付け和で計算される。</p>
+            </div>
+
             <p>
                 カーネル関数 $W$ にはいくつかの種類があるが、ここでは Wendland kernel を用いる。 $q$ は粒子間の無次元距離 ($q=r/h$) である。
             </p>
@@ -171,6 +366,23 @@
                 $$ m\frac{du}{dt}=-V\nabla p+V\mu\nabla^{2}u+mg \tag{式5} $$
                 
             </div>
+
+            <div class="illustration">
+                <svg width="250" height="150" viewBox="0 0 250 150" xmlns="http://www.w3.org/2000/svg">
+                    <circle cx="125" cy="75" r="10" class="particle-a" />
+                    
+                    <line x1="125" y1="65" x2="125" y2="35" class="arrow-green" />
+                    <text x="130" y="45" class="svg-text" style="fill: var(--green);">-V∇p (圧力)</text>
+                    
+                    <line x1="85" y1="75" x2="115" y2="75" class="arrow-purple" />
+                    <text x="10" y="79" class="svg-text" style="fill: var(--purple);">Vμ∇²u (粘性)</text>
+
+                    <line x1="125" y1="85" x2="125" y2="115" class="arrow-muted" />
+                    <text x="130" y="110" class="svg-text-muted">mg (重力)</text>
+                </svg>
+                <p>図4: 一つの流体粒子にかかる力（圧力による力、粘性力、重力）の概念図。</p>
+            </div>
+
             <p>
                 ここで、uは粒子の速度[m/s], pは圧力[Pa], $\mu$は粘性係数[Pas], gは重力加速度[m/s²]である。 また、粒子の密度を $\rho[kg/m^{3}]$ とすると、 $m=\rho V$ であることから、式(6)が得られる。
             </p>
@@ -217,6 +429,7 @@
                 $$ p = \frac{c_0^2 \rho_0}{\gamma} \left( \left( \frac{\rho}{\rho_0} \right)^\gamma - 1 \right) \quad (\gamma = 7) \tag{式11} $$
                 
             </div>
+            
             <p>
                 ここで $c_0$ は基準となる音速、 $\rho_0$ は基準密度である。 圧力 $p$ は密度の変化（圧縮）によって生じる力として計算される。
             </p>
@@ -232,6 +445,24 @@
             <div class="formula-block">
                 $$ p_a = \frac{\sum_b p_b W(|r_a - r_b|, h)}{\sum_b W(|r_a - r_b|, h)} \tag{式13} $$
                 
+            </div>
+
+            <div class="illustration">
+                <svg width="250" height="150" viewBox="0 0 250 150" xmlns="http://www.w3.org/2000/svg">
+                    <line x1="120" y1="70" x2="130" y2="80" class="point-a" />
+                    <line x1="120" y1="80" x2="130" y2="70" class="point-a" />
+                    <text x="110" y="100" class="svg-text">点 a (Va, Pa)</text>
+
+                    <circle cx="125" cy="75" r="50" class="kernel-radius" />
+                    
+                    <circle cx="95" cy="60" r="5" class="particle-b" />
+                    <text x="85" y="50" class="svg-text-muted">Vb, Pb</text>
+                    <circle cx="145" cy="50" r="5" class="particle-b" />
+                    <text x="135" y="40" class="svg-text-muted">Vb, Pb</text>
+                    <circle cx="125" cy="110" r="5" class="particle-b" />
+                    <circle cx="155" cy="90" r="5" class="particle-b" />
+                </svg>
+                <p>図5: 物理量の計算（式12, 13）。任意の点aの物理量は、近傍の粒子bが持つ物理量を重み付け平均して算出される。</p>
             </div>
 
             <h3 style="margin-top: 40px;">参考文献</h3>
