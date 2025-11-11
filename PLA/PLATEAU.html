@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PLATEAU解説</title>
+    <!-- 既存のstyle.cssを読み込みます -->
+    <link rel="stylesheet" href="../style.css">
+    <style>
+        /* HTMLファイルに固有の調整を少し加えます */
+        h2, h3 {
+            color: #fff;
+            border-bottom: 2px solid var(--blue);
+            padding-bottom: 8px;
+            margin-top: 24px;
+        }
+        ul, ol {
+            margin-left: 20px;
+            padding-left: 10px;
+        }
+        li {
+            margin-bottom: 10px;
+        }
+        .section-lead {
+            color: var(--muted);
+            font-size: 1.1em;
+            margin-bottom: 24px;
+        }
+        .card h4 {
+            color: var(--purple);
+            margin-top: 0;
+            margin-bottom: 10px;
+        }
+        .card p {
+            font-size: 0.95em;
+            color: var(--muted);
+            margin-bottom: 0;
+        }
+        .exercise-step {
+            background: linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));
+            border: 1px solid rgba(255,255,255,0.03);
+            padding: 16px;
+            border-radius: 10px;
+            margin-bottom: 12px;
+        }
+        .links-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 18px;
+            margin-top: 18px;
+        }
+        @media (max-width: 600px) {
+            .links-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- ヘッダー -->
+    <header class="site-header">
+        <div class="container header-inner">
+            <div class="logo">PLATEAU Guide</div>
+            <nav class="site-nav">
+                <a href="#about" class="active">概要</a>
+                <a href="#features">特徴</a>
+                <a href="#data">データ</a>
+                <a href="#links">リンクと演習</a>
+            </nav>
+            <button class="menu-btn" aria-label="メニューを開く">☰</button>
+        </div>
+    </header>
+
+    <main>
+        <!-- ヒーローセクション -->
+        <section class="section--full hero-inner">
+            <h1 class="hero-title">PLATEAU: 3D都市モデルの世界へようこそ</h1>
+            <p class="hero-lead">
+                国土交通省が進める、日本全国の3D都市モデルの整備・活用・オープンデータ化プロジェクト「PLATEAU（プラトー）」について学びましょう。
+            </p>
+        </section>
+
+        <div class="container">
+            <!-- 概要 -->
+            <section class="section" id="about">
+                <h2>PLATEAUとは？</h2>
+                <p class="section-lead">
+                    PLATEAU（プラトー）は、国土交通省が主導する、日本全国の3D都市モデルの整備・オープンデータ化プロジェクトです。
+                </p>
+                <p>
+                    このプロジェクトの最大の特徴は、都市の建物を単なる「箱」として3D化するだけでなく、その建物が持つ「意味」（セマンティクス）をデータに付与している点です。
+                    例えば、建物の高さ、建築年、用途（住宅、商業施設、オフィスなど）、さらには浸水想定区域のような行政データまで、多様な情報を3Dモデルに統合しています。
+                </p>
+                <p>
+                    これにより、従来の2D地図では難しかった高度なシミュレーション（防災、都市計画、人流分析など）や、新しいサービスの創出（AR/VR、自動運転など）が可能になります。PLATEAUは、都市のデジタルトランスフォーメーション（DX）を実現するための基盤データを目指しています。
+                </p>
+            </section>
+
+            <!-- 特徴（ファイル形式・属性） -->
+            <section class="section" id="features">
+                <h2>データの形式と属性</h2>
+                <p class="section-lead">
+                    PLATEAUのデータは、国際標準規格やWeb配信に適した形式で提供され、豊富な属性情報を持っています。
+                </p>
+                <div class="projects-grid">
+                    <div class="card">
+                        <h4>多様なファイル形式</h4>
+                        <p>
+                            データの標準形式は<strong>CityGML</strong>という国際標準規格です。これに加え、Webブラウザで軽量に表示するための<strong>3D Tiles</strong>や、CG・ゲーム開発で使いやすい<strong>OBJ</strong>、<strong>FBX</strong>形式など、多様なフォーマットで提供されています。
+                        </p>
+                    </div>
+                    <div class="card">
+                        <h4>LOD (Level of Detail)</h4>
+                        <p>
+                            PLATEAUは、LOD (詳細度) という概念でモデルの精細度を管理しています。
+                            <strong>LOD1</strong> (箱型の建物)、<strong>LOD2</strong> (屋根形状あり)、<strong>LOD3</strong> (窓や扉など詳細表現あり)、<strong>LOD4</strong> (内装あり) まで定義されており、主にLOD1とLOD2が整備されています。
+                        </p>
+                    </div>
+                    <div class="card">
+                        <h4>豊富な属性情報 (セマンティクス)</h4>
+                        <p>
+                            これがPLATEAUの核です。建築物データには「名称」「用途分類」「建築年」「階数」「高さ」などが含まれます。さらに「浸水想定区域」「都市計画区域」「土砂災害警戒区域」といった行政データを重ね合わせて分析することも可能です。
+                        </p>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 都市データ -->
+            <section class="section" id="data">
+                <h2>どの都市のデータがある？</h2>
+                <p class="section-lead">
+                    PLATEAUは、2020年度の東京都23区をはじめとする56都市のデータ整備からスタートし、現在も整備対象都市は全国に拡大中です。
+                </p>
+                <p>
+                    公式サイトの「データ」セクションから、最新の整備状況とダウンロード可能な都市の一覧を確認できます。
+                </p>
+                <div class="projects-grid">
+                    <div class="card">
+                        <div class="thumb" style="background-image: url('https://placehold.co/600x400/0b5fff/e6eef8?text=Tokyo');"></div>
+                        <h4>東京都 23区</h4>
+                        <p>プロジェクト初期からのデータセット。詳細なLOD2モデルが整備されています。</p>
+                    </div>
+                    <div class="card">
+                        <div class="thumb" style="background-image: url('https://placehold.co/600x400/6a4cff/e6eef8?text=Osaka');"></div>
+                        <h4>大阪市</h4>
+                        <p>西日本の中心都市。都市全体の詳細な3Dモデルが利用可能です。</p>
+                    </div>
+                    <div class="card">
+                        <div class="thumb" style="background-image: url('https://placehold.co/600x400/00b894/e6eef8?text=Sapporo');"></div>
+                        <h4>札幌市</h4>
+                        <p>積雪データなど、地域特性を反映したユースケースも研究されています。</p>
+                    </div>
+                </div>
+                <p style="margin-top: 16px; text-align: center; color: var(--muted);">
+                    その他、横浜市、名古屋市、京都市、福岡市、那覇市など、多くの都市のデータが順次公開されています。
+                </p>
+            </section>
+
+            <!-- リンクと演習 -->
+            <section class="section" id="links">
+                <h2>関連リンクと演習</h2>
+                <p class="section-lead">
+                    PLATEAUについてさらに学ぶための公式サイトや、データをブラウザで体験できる「PLATEAU View」を紹介します。
+                </p>
+
+                <div class="links-grid">
+                    <div class="card">
+                        <h4>PLATEAU 公式サイト</h4>
+                        <p>最新情報、ドキュメント、ユースケース、データダウンロードはこちらから。</p>
+                        <a href="https://www.mlit.go.jp/plateau/" target="_blank" rel="noopener" class="btn small" style="margin-top: 12px;">公式サイトへ</a>
+                    </div>
+                    <div class="card">
+                        <h4>PLATEAU View</h4>
+                        <p>ブラウザ上でPLATEAUの3D都市モデルを探索できる公式ビューアです。</p>
+                        <a href="https://plateauview.mlit.go.jp/" target="_blank" rel="noopener" class="btn small" style="margin-top: 12px;">PLATEAU Viewを開く</a>
+                    </div>
+                </div>
+
+                <!-- 演習 -->
+                <h3 id="exercise" style="margin-top: 40px;">演習: PLATEAU Viewで都市を見てみよう</h3>
+                <p>
+                    実際にPLATEAU Viewを使って、3D都市モデルに触れてみましょう。
+                </p>
+                <ol>
+                    <li class="exercise-step">
+                        上の「PLATEAU Viewを開く」ボタンをクリックして、新しいタブでビューアを起動します。
+                    </li>
+                    <li class="exercise-step">
+                        ビューアが読み込まれたら、画面左側にあるメニューから「データセット」を選択します。
+                    </li>
+                    <li class="exercise-step">
+                        興味のある都市（例：「東京都23区」や「大阪市」）の「建築物モデル」などをオン（チェックを入れる）にします。
+                    </li>
+                    <li class="exercise-step">
+                        地図をマウスの左ドラッグで移動、右ドラッグで回転、ホイールでズームできます。自由に都市空間を探索してみましょう。
+                    </li>
+                    <li class="exercise-step">
+                        気になる建物をクリックしてみてください。画面右側にその建物の「高さ」や「用途」（例: 業務施設, 商業施設など）といった属性情報が表示されるのが確認できます。これがPLATEAUの持つ「意味」です。
+                    </li>
+                </ol>
+            </section>
+        </div>
+    </main>
+
+    <!-- フッター -->
+    <footer class="site-footer">
+        <div class="container">
+            <p class="small-muted">&copy; 2025 PLATEAU 学習ガイド</p>
+        </div>
+    </footer>
+
+    <!-- スクリプト -->
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            // モバイルメニューのトグル
+            const menuBtn = document.querySelector('.menu-btn');
+            const siteNav = document.querySelector('.site-nav');
+            
+            if (menuBtn && siteNav) {
+                menuBtn.addEventListener('click', () => {
+                    siteNav.classList.toggle('open');
+                });
+            }
+
+            // ナビゲーションリンクのアクティブ切り替え
+            const navLinks = document.querySelectorAll('.site-nav a');
+            navLinks.forEach(link => {
+                link.addEventListener('click', () => {
+                    navLinks.forEach(nav => nav.classList.remove('active'));
+                    link.classList.add('active');
+                    // モバイルメニューが開いていたら閉じる
+                    if (siteNav.classList.contains('open')) {
+                        siteNav.classList.remove('open');
+                    }
+                });
+            });
+
+            // セクションのスクロールアニメーション
+            const sections = document.querySelectorAll('.section');
+            const observer = new IntersectionObserver((entries) => {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting) {
+                        entry.target.classList.add('in-view');
+                    }
+                });
+            }, {
+                threshold: 0.1 // 10%見えたら発動
+            });
+
+            sections.forEach(section => {
+                observer.observe(section);
+            });
+        });
+    </script>
+
+</body>
+</html>
