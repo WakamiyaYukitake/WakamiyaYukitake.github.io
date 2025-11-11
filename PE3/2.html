@@ -12,9 +12,10 @@
     <style>
         /* カード内の見出しサイズを少し調整 */
         .step-card-title {
-            font-size: 1.1em;
+            font-size: 1.25em; /* 少し大きく */
             color: var(--blue);
-            margin-bottom: 8px;
+            margin-bottom: 10px;
+            display: block; /* マージンを効かせるため */
         }
 
         /* リンクボタン用のコンテナ */
@@ -26,6 +27,70 @@
             margin-bottom: 16px;
             justify-content: center; /* ボタンを中央揃え */
         }
+
+        /* --- ここからデザイン強調用の追加CSS --- */
+
+        /* セクションタイトルを目立たせる */
+        h2 {
+            border-bottom: 3px solid;
+            border-image: linear-gradient(90deg, var(--blue), var(--purple)) 1;
+            padding-bottom: 10px;
+            margin-bottom: 32px; /* 余白を増やす */
+            font-size: 2em; /* 大きく */
+            letter-spacing: 1px;
+        }
+
+        /* セクション1 (目標) のリストスタイル */
+        #overview ul {
+            list-style: none;
+            padding-left: 0;
+        }
+        #overview li {
+            background: linear-gradient(135deg, rgba(11,95,255,0.05), rgba(106,76,204,0.05));
+            border: 1px solid rgba(255,255,255,0.05);
+            border-left: 5px solid var(--blue);
+            padding: 20px;
+            margin-bottom: 16px;
+            border-radius: 10px;
+            font-size: 1.1em;
+            box-shadow: 0 8px 24px rgba(2,6,23,0.7);
+            transition: transform 200ms, box-shadow 200ms;
+        }
+        #overview li:hover {
+            transform: translateY(-3px) scale(1.02);
+            box-shadow: 0 12px 30px rgba(2,6,23,0.9);
+        }
+
+        /* セクション2 (流れ) のカードを派手に */
+        .projects-grid .card {
+            transition: transform 300ms, box-shadow 300ms, border-color 300ms;
+            border: 1px solid rgba(255,255,255,0.03);
+            background: linear-gradient(180deg, rgba(255,255,255,0.03), rgba(255,255,255,0.01));
+        }
+        .projects-grid .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 12px 36px rgba(11,95,255,0.1);
+            border-color: rgba(11,95,255,0.3);
+        }
+        .card .small-muted {
+            font-size: 0.95em; /* 少し大きく */
+            line-height: 1.7; /* 行間を調整 */
+            color: var(--muted);
+        }
+
+        /* セクション3 (方向性) のボタンを派手に */
+        .button-container .btn {
+            padding: 12px 24px; /* 大きく */
+            font-size: 1.1em;
+            box-shadow: 0 10px 30px rgba(11,95,255,0.15);
+            transition: transform 200ms, box-shadow 200ms, background 300ms;
+        }
+        .button-container .btn:hover {
+            transform: translateY(-3px) scale(1.03);
+            box-shadow: 0 15px 35px rgba(11,95,255,0.25);
+            background: linear-gradient(90deg, var(--purple), var(--blue));
+        }
+
     </style>
 </head>
 <body>
@@ -67,26 +132,20 @@
                 <p class="hero-lead">
                     「粒子法：SPH法」と「PLATEAU」について
                 </p>
-                
-                <!-- ご要望の「元のホームページへ遷移するボタン」 -->
-                <!-- <a href="index.html" class="btn">
-                    ホームに戻る
-                </a> -->
             </div>
         </section>
-
-        <!-- 
-          以下に講義内容のセクションを追加していきます。
-          style.css の .section クラスを使用しています。
-        -->
 
         <!-- 1. 概要セクション -->
         <section id="overview" class="section">
             <div class="container">
-                <h2>1. 今日の目標</h2> <!-- タグが閉じていなかったので修正 -->
-                <p>
-                    ・全体の流れを理解する<br>・PLATEAU及びSPH法について理解する<br>・PLATEAUについて調べてみる<br>・DesignSPHyiscsを触ってみる（時間があれば）
-                </p>
+                <h2>1. 今日の目標</h2>
+                <!-- pタグをul/liに変更し、スタイルを適用 -->
+                <ul>
+                    <li>全体の流れを理解することである。</li>
+                    <li>PLATEAU及びSPH法について概要を理解することである。</li>
+                    <li>PLATEAUについて自身で調べてみることである。</li>
+                    <li>（時間があれば）DualSPHysicsを触ってみることである。</li>
+                </ul>
             </div>
         </section>
 
@@ -98,9 +157,9 @@
                     私の卒業研究では、熊本県熊本市井川淵町周辺を対象に、国土交通省が提供する3D都市モデル「PLATEAU」のデータと、粒子法シミュレーションソフト「DualSPHysics」を用いて、河川が氾濫した場合のシミュレーションを行った。
                 </p>
                 
-                <h3 style="margin-top: 24px; margin-bottom: 16px;">解析のプロセス</h3>
-                <p>
-                    解析は、大きく分けて「3Dモデルの準備」「解析の実行」「結果の可視化」のステップで進めている。
+                <h3 style="margin-top: 32px; margin-bottom: 24px; font-size: 1.5em; text-align: center;">解析のプロセス</h3>
+                <p style="text-align: center; max-width: 700px; margin: 0 auto 24px auto; color: var(--muted);">
+                    解析は、大きく分けて「3Dモデルの準備」「解析の実行」「結果の可視化」のステップで進めた。
                 </p>
 
                 <!-- style.css の .projects-grid と .card を使用したレイアウト例 -->
@@ -109,42 +168,41 @@
                     <div class="card">
                         <h3 class="step-card-title">1. 3Dモデル準備</h3>
                         <p class="small-muted">
-                            PLATEAUから対象地域の地形と建物のデータ (CityGML) を取得。
+                            PLATEAUから対象地域（熊本市井川淵町周辺）の地形（5m解像度DEM）と建物データ（LOD1）をCityGML形式で取得した。
                         </p>
                     </div>
 
                     <div class="card">
                         <h3 class="step-card-title">2. データ変換</h3>
                         <p class="small-muted">
-                            PLATEAU SDK (Unity) や Blender を使い、CityGMLを解析ソフト(DSPH)で読み込めるSTL形式に変換。
+                            CityGMLは直接使えないため、「PLATEAU SDK for Unity」でOBJ形式に変換後、「Blender」でSTL形式に再変換した。
                         </p>
                     </div>
 
                     <div class="card">
                         <h3 class="step-card-title">3. 解析条件の設定</h3>
                         <p class="small-muted">
-                            DualSPHysicsで、破堤箇所、水の流入速度、粒子の間隔 (解像度) などをXMLファイルで設定。
+                            「DualSPHysics」にて、破堤幅50m、流入速度1m/s、粒子間隔0.5m、解析時間600秒といった条件をXMLファイルで定義した。
                         </p>
                     </div>
 
                     <div class="card">
                         <h3 class="step-card-title">4. シミュレーション実行</h3>
                         <p class="small-muted">
-                            GPUを使用して、設定した時間（本研究では600秒間）の流体計算を実行。
+                            設定したXMLを読み込み、GPU（NVIDIA GeForce RTX 3060）を用いて高速に流体計算を実行し、結果をVTKファイルとして出力した。
                         </p>
                     </div>
 
                     <div class="card">
                         <h3 class="step-card-title">5. 可視化と分析</h3>
                         <p class="small-muted">
-                            ParaViewなどの可視化ソフトで、浸水深、流速、建物が受ける力などを分析・可視化。
+                            オープンソースの「ParaView」を用いてVTKファイルを読み込み、浸水深、流速、建物が受ける力などを3Dで可視化・分析した。
                         </p>
                     </div>
                 </div>
                 
                 <!-- style.cssの .video-wrapper を使用したビデオ埋め込み例 -->
-                <div class="video-wrapper" style="margin-top: 24px;"> <!-- ビデオの上マージン調整 -->
-                    <!-- 例: YouTubeのプレースホルダー -->
+                <div class="video-wrapper" style="margin-top: 32px;"> <!-- ビデオの上マージン調整 -->
                     <iframe 
                         src="https://www.youtube.com/embed/krXXW6wtNzA" 
                         title="YouTube video player" 
@@ -154,7 +212,21 @@
                     </iframe>
                 </div>
                 
-                <!-- SPHとPLATEAUへのリンクボタンを追加 -->
+                <p style="margin-top: 16px; text-align: center; color: var(--muted);">
+                    [これは、上記の手法で解析した結果の可視化事例である。]
+                </p>
+            </div>
+        </section>
+
+        <!-- 3. 詳細・方向性セクション (旧 演習セクション) -->
+        <section id="exercise" class="section">
+            <div class="container">
+                <h2>3. 詳細と今後の方向性</h2>
+                <p>
+                    この解析で使用した「SPH法」という流体解析の理論と、3D都市モデルのデータソースである「PLATEAU」について、以下のリンクで詳細を確認すること。
+                </p>
+
+                <!-- SPHとPLATEAUへのリンクボタンをここに追加 -->
                 <div class="button-container">
                     <a href="https://wakamiyayukitake.github.io/SPH/SPH.html" class="btn" target="_blank" rel="noopener noreferrer">
                         SPH法について
@@ -164,49 +236,10 @@
                     </a>
                 </div>
 
-                <p style="margin-top: 16px;">
-                    [ビデオの補足説明や、見るべきポイントなどを記述します。]
+                <p style="margin-top: 24px;">
+                    今後は、建物内部の浸水や、浮遊物（自動車など）の影響、建物の構造部材ごとの被害評価など、より詳細な解析を行うことが課題である。
                 </p>
-            </div>
-        </section>
-
-        <!-- 3. 演習セクション (カードレイアウト例) -->
-        <section id="exercise" class="section">
-            <div class="container">
-                <h2>3. 演習課題</h2>
-                <p>
-                    [演習課題の全体的な説明を記述します。]
-                </p>
-
-                <!-- style.css の .projects-grid と .card を使用したレイアウト例 -->
-                <div class="projects-grid">
-                    
-                    <!-- 課題カード 1 -->
-                    <div class="card">
-                        <h3>課題 1: [課題タイトル]</h3>
-                        <p class="small-muted">
-                            [課題の簡単な説明。]
-                        </p>
-                        <!-- <a href="#" class="btn small">詳細</a> -->
-                    </div>
-
-                    <!-- 課題カード 2 -->
-                    <div class="card">
-                        <h3>課題 2: [課題タイトル]</h3>
-                        <p class="small-muted">
-                            [課題の簡単な説明。]
-                        </p>
-                    </div>
-
-                    <!-- 課題カード 3 (プレースホルダー) -->
-                    <div class="card">
-                        <h3>[課題 3]</h3>
-                        <p class="small-muted">
-                            [必要に応じてカードを追加します。]
-                        </p>
-                    </div>
-
-                </div>
+                
             </div>
         </section>
 
