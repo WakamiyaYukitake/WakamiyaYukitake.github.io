@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>第2回講義資料 - PE3</title>
+    <!-- 
+      style.cssがPE3フォルダと同じ階層にあると想定し、相対パスを ../style.css に設定しています。
+      もしPE3フォルダ内にstyle.cssがある場合は、 'style.css' に変更してください。
+    -->
+    <link rel="stylesheet" href="../style.css">
+    <style>
+        /* カード内の見出しサイズを少し調整 */
+        .step-card-title {
+            font-size: 1.1em;
+            color: var(--blue);
+            margin-bottom: 8px;
+        }
+
+        /* リンクボタン用のコンテナ */
+        .button-container {
+            display: flex;
+            flex-wrap: wrap; /* モバイルで折り返し */
+            gap: 16px;
+            margin-top: 24px;
+            margin-bottom: 16px;
+            justify-content: center; /* ボタンを中央揃え */
+        }
+    </style>
+</head>
+<body>
+
+    <!-- サイトヘッダー (style.cssの定義に基づく) -->
+    <header class="site-header">
+        <div class="container">
+            <div class="header-inner">
+                
+                <!-- ロゴにindex.htmlへのリンクを追加 -->
+                <a href="index.html" class="logo" style="text-decoration: none;">PE3</a>
+                
+                <!-- ナビゲーション -->
+                <nav class="site-nav">
+                  
+                    <!-- ページ内リンク (下のセクションIDに対応) -->
+                    <a href="#overview">目的</a>
+                    <a href="#lecture">手順</a>
+                    <a href="#exercise">方向性</a>
+
+                    <!-- index.html (同じPE3フォルダ内にあると想定) へ戻るリンク -->
+                    <a href="index.html">ホームへもどる</a>
+
+                </nav>
+
+                <!-- モバイル用メニューボタン (style.cssの定義に基づく) -->
+                <button class="menu-btn" aria-label="メニューを開閉">☰</button>
+            </div>
+        </div>
+    </header>
+
+    <!-- メインコンテンツ -->
+    <main>
+
+        <!-- ヒーローセクション (ページタイトル) -->
+        <section class="section section--full" style="padding-top: 80px; padding-bottom: 60px;">
+            <div class="container hero-inner">
+                <h1 class="hero-title">第2回</h1>
+                <p class="hero-lead">
+                    「粒子法：SPH法」と「PLATEAU」について
+                </p>
+                
+                <!-- ご要望の「元のホームページへ遷移するボタン」 -->
+                <!-- <a href="index.html" class="btn">
+                    ホームに戻る
+                </a> -->
+            </div>
+        </section>
+
+        <!-- 
+          以下に講義内容のセクションを追加していきます。
+          style.css の .section クラスを使用しています。
+        -->
+
+        <!-- 1. 概要セクション -->
+        <section id="overview" class="section">
+            <div class="container">
+                <h2>1. 目的</h2> <!-- タグが閉じていなかったので修正 -->
+                <p>
+                    test
+                </p>
+                <p>
+                    test
+                </p>
+            </div>
+        </section>
+
+        <!-- 2. 解説セクション (更新) -->
+        <section id="lecture" class="section">
+            <div class="container">
+                <h2>2. PLATEAUを用いた粒子法による河川氾濫解析</h2>
+                <p>
+                    私の卒業研究では、熊本県熊本市井川淵町周辺を対象に、国土交通省が提供する3D都市モデル「PLATEAU」のデータと、粒子法シミュレーションソフト「DualSPHysics」を用いて、河川が氾濫した場合のシミュレーションを行った。
+                </p>
+                
+                <h3 style="margin-top: 24px; margin-bottom: 16px;">解析のプロセス</h3>
+                <p>
+                    解析は、大きく分けて「3Dモデルの準備」「解析の実行」「結果の可視化」のステップで進めている。
+                </p>
+
+                <!-- style.css の .projects-grid と .card を使用したレイアウト例 -->
+                <div class="projects-grid" style="grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));">
+                    
+                    <div class="card">
+                        <h3 class="step-card-title">1. 3Dモデル準備</h3>
+                        <p class="small-muted">
+                            PLATEAUから対象地域の地形と建物のデータ (CityGML) を取得。
+                        </p>
+                    </div>
+
+                    <div class="card">
+                        <h3 class="step-card-title">2. データ変換</h3>
+                        <p class="small-muted">
+                            PLATEAU SDK (Unity) や Blender を使い、CityGMLを解析ソフト(DSPH)で読み込めるSTL形式に変換。
+                        </p>
+                    </div>
+
+                    <div class="card">
+                        <h3 class="step-card-title">3. 解析条件の設定</h3>
+                        <p class="small-muted">
+                            DualSPHysicsで、破堤箇所、水の流入速度、粒子の間隔 (解像度) などをXMLファイルで設定。
+                        </p>
+                    </div>
+
+                    <div class="card">
+                        <h3 class="step-card-title">4. シミュレーション実行</h3>
+                        <p class="small-muted">
+                            GPUを使用して、設定した時間（本研究では600秒間）の流体計算を実行。
+                        </p>
+                    </div>
+
+                    <div class="card">
+                        <h3 class="step-card-title">5. 可視化と分析</h3>
+                        <p class="small-muted">
+                            ParaViewなどの可視化ソフトで、浸水深、流速、建物が受ける力などを分析・可視化。
+                        </p>
+                    </div>
+                </div>
+                
+                <!-- style.cssの .video-wrapper を使用したビデオ埋め込み例 -->
+                <div class="video-wrapper" style="margin-top: 24px;"> <!-- ビデオの上マージン調整 -->
+                    <!-- 例: YouTubeのプレースホルダー -->
+                    <iframe 
+                        src="https://www.youtube.com/embed/krXXW6wtNzA" 
+                        title="YouTube video player" 
+                        frameborder="0" 
+                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
+                        allowfullscreen>
+                    </iframe>
+                </div>
+                
+                <!-- SPHとPLATEAUへのリンクボタンを追加 -->
+                <div class="button-container">
+                    <a href="https://wakamiyayukitake.github.io/SPH/SPH.html" class="btn" target="_blank" rel="noopener noreferrer">
+                        SPH法について
+                    </a>
+                    <a href="https://wakamiyayukitake.github.io/PLA/PLATEAU.html" class="btn" target="_blank" rel="noopener noreferrer">
+                        PLATEAUについて
+                    </a>
+                </div>
+
+                <p style="margin-top: 16px;">
+                    [ビデオの補足説明や、見るべきポイントなどを記述します。]
+                </p>
+            </div>
+        </section>
+
+        <!-- 3. 演習セクション (カードレイアウト例) -->
+        <section id="exercise" class="section">
+            <div class="container">
+                <h2>3. 演習課題</h2>
+                <p>
+                    [演習課題の全体的な説明を記述します。]
+                </p>
+
+                <!-- style.css の .projects-grid と .card を使用したレイアウト例 -->
+                <div class="projects-grid">
+                    
+                    <!-- 課題カード 1 -->
+                    <div class="card">
+                        <h3>課題 1: [課題タイトル]</h3>
+                        <p class="small-muted">
+                            [課題の簡単な説明。]
+                        </p>
+                        <!-- <a href="#" class="btn small">詳細</a> -->
+                    </div>
+
+                    <!-- 課題カード 2 -->
+                    <div class="card">
+                        <h3>課題 2: [課題タイトル]</h3>
+                        <p class="small-muted">
+                            [課題の簡単な説明。]
+                        </p>
+                    </div>
+
+                    <!-- 課題カード 3 (プレースホルダー) -->
+                    <div class="card">
+                        <h3>[課題 3]</h3>
+                        <p class="small-muted">
+                            [必要に応じてカードを追加します。]
+                        </p>
+                    </div>
+
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- サイトフッター -->
+    <footer class="site-footer">
+        <div class="container">
+            <p class="small-muted">&copy; 2024 [あなたの名前または組織名].</p>
+        </div>
+    </footer>
+
+    <!-- モバイルメニュー用のスクリプト (style.cssの機能に必要) -->
+    <script>
+        // フェードインアニメーション (style.cssの .section のため)
+        document.addEventListener('DOMContentLoaded', () => {
+            const sections = document.querySelectorAll('.section');
+            const observer = new IntersectionObserver((entries) => {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting) {
+                        entry.target.classList.add('in-view');
+                    }
+                });
+            }, { threshold: 0.1 }); // 10%見えたら実行
+
+            sections.forEach(section => {
+                observer.observe(section);
+            });
+            
+            // ヒーローセクションは最初から表示
+            const hero = document.querySelector('.section--full');
+            if(hero) hero.classList.add('in-view');
+
+            // モバイルメニューのトグル (style.cssの .menu-btn のため)
+            const menuBtn = document.querySelector('.menu-btn');
+            const nav = document.querySelector('.site-nav');
+            if (menuBtn && nav) {
+                menuBtn.addEventListener('click', () => {
+                    nav.classList.toggle('open');
+                });
+            }
+        });
+    </script>
+
+</body>
+</html>
