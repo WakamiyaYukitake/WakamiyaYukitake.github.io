@@ -91,7 +91,7 @@
 
     <header class="site-header">
         <div class="container header-inner">
-            <div class="logo">WY</div>
+            <div class="logo">PE3</div>
             <nav class="site-nav">
                 <a href="#schedule" class="active">Schedule</a>
             </nav>
@@ -105,8 +105,8 @@
             <section class="hero-inner" style="padding-top: 60px; padding-bottom: 40px; text-align: left;">
                 <h1 class="hero-title" style="font-size: 24px;">プロジェクト演習Ⅲ 瀬戸研究室 スケジュール</h1>
                 <p class="hero-lead" style="text-align: left; margin: 12px 0 0 0; max-width: 100%;">
-                    多少の変動はあると思います。
-                </p>
+                    多少の変動はあると思う。
+                    </p>
             </section>
 
             <section id="schedule" class="section in-view">
@@ -129,11 +129,11 @@
                     </div>
                     <div class="schedule-details">
                         <h3>粒子法：SPH法とPLATEAU</h3>
-                        <p>シミュレーションの背景にある理論と、3D都市モデル（PLATEAU）について学びます。</p>
+                        <p>シミュレーションの背景にある理論と、3D都市モデル（PLATEAU）について</p>
                         <ul>
-                            <li>粒子法・SPH法の基礎理論（なぜ粒子で流体を計算できるか）</li>
-                            <li>3D都市モデル「PLATEAU」とは何か、どう活用できるか</li>
-                            <li>演習で使うDualSPHysicsとParaViewの概要説明</li>
+                            <li>全体の流れを理解する。</li>
+                            <li>PLATEAU及びSPH法について概要を理解する。</li>
+                            <li>PLATEAUについて自身で調べてみる。</li>
                         </ul>
                     </div>
                 </div>
@@ -141,110 +141,78 @@
                 <div class="schedule-card">
                     <div class="schedule-date">
                         <div class="session">第3回</div>
-                        <div class="date">11/25 (火)<br>14:30~</div>
+                        <div class="date">11/25 (火)<br>14:20~</div>
                     </div>
                     <div class="schedule-details">
-                        <h3>【重要】環境構築＆ベンチマーク</h3>
-                        <p><strong>DualSPHysics</strong>と<strong>ParaView</strong>をインストールし、各自のPCで動くか、どの程度の速度が出るかをテストします。</p>
-                        <ul>
-                            <li>DualSPHysics, ParaViewのインストール</li>
-                            <li>全員で同じ単純なサンプル(e.g., CaseDambreak)を実行</li>
-                            <li><strong>実行時間を計測し、PCスペックを把握します</strong></li>
-                        </ul>
-                    </div>
+                        <h3>プロジェクト演習Ⅲでの目標決め</h3>
+                        <p>具体的にどのような方針で、どこを、どのようなパラメータで解析するかを決定する。</p>
+                        </div>
                 </div>
 
                 <div class="schedule-card">
                     <div class="schedule-date">
                         <div class="session">第4回</div>
-                        <div class="date">12/8 (月)<br>16:00~</div>
+                        <div class="date">12/8 (月)<br>16:10~</div>
                     </div>
                     <div class="schedule-details">
-                        <h3>計画分岐＆テーマ決定</h3>
-                        <p>ベンチマーク結果を基に、テーマと役割を決定します。</p>
-                        <ul>
-                            <li><strong>Plan A (全員のPCが高速):</strong> 全員で解析。興味に応じて「他都市解析」or「浮遊物解析」。</li>
-                            <li><strong>Plan B (PCスペックに差がある):</strong>
-                                <ul>
-                                    <li><strong>解析班 (1-2名):</strong> 高速PCで Plan A のテーマを実施。</li>
-                                    <li><strong>実験班 (2-3名):</strong> 「3Dプリンタ」でモデルを作成し、物理実験を行う。</li>
-                                </ul>
-                            </li>
-                            <li>最終テーマを「<strong>シミュレーションと物理実験の比較</strong>」に設定します。</li>
-                        </ul>
-                    </div>
+                        <h3>データ準備とモデル作成</h3>
+                        <p>PLATEAUから必要なデータをダウンロードし、解析用の3Dモデルを作成する。あわせて、シミュレーションのパラメータ設定も行う。</p>
+                        </div>
                 </div>
 
                 <div class="schedule-card">
                     <div class="schedule-date">
                         <div class="session">第5回</div>
-                        <div class="date">12/19 (金)<br>16:10~</div>
+                        <div class="date">12/22 (月)<br>16:10~</div>
                     </div>
                     <div class="schedule-details">
-                        <h3>データ準備とモデル作成</h3>
-                        <p>各班、解析/実験の準備を進めます。</p>
-                        <ul>
-                            <li><strong>解析班:</strong> PLATEAUデータ(STL) or 浮遊物(STL)の準備。XMLケースファイル作成開始。</li>
-                            <li><strong>実験班:</strong> 比較対象の3Dモデル作成、3Dプリンタでのスライス・印刷開始。</li>
-                        </ul>
-                    </div>
+                        <h3>シミュレーション実行と動作確認</h3>
+                        <p>設定したパラメータでシミュレーションを実行し、初期段階でエラーが出ないか、意図した通りに動作しているかを確認する。</p>
+                        </div>
                 </div>
 
                 <div class="schedule-card">
                     <div class="schedule-date">
                         <div class="session">第6回</div>
-                        <div class="date">12/22 (月)<br>16:10~</div>
-                    </div>
+                        <div class="date">1/5 (月)<br>16:10~</div>
+                        </div>
                     <div class="schedule-details">
-                        <h3>解析・実験の実行（中間）</h3>
-                        <p>シミュレーション実行と、物理実験の実施。</p>
-                        <ul>
-                            <li><strong>解析班:</strong> シミュレーション実行、エラーデバッグ。</li>
-                            <li><strong>実験班:</strong> 印刷したモデルで水流実験、スマホ等で動画撮影。</li>
-                        </ul>
-                    </div>
+                        <h3>中間進捗確認とトラブルシューティング</h3>
+                        <p>年末年始の間に実行した（あるいは実行中の）シミュレーションの進捗を確認し、発生した問題点やエラーについて議論し、解決策を探る。</p>
+                        </div>
                 </div>
 
                 <div class="schedule-card">
                     <div class="schedule-date">
                         <div class="session">第7回</div>
-                        <div class="date">12/26 (金)<br>16:10~</div>
-                    </div>
+                        <div class="date">1/19 (月)<br>16:10~</div>
+                        </div>
                     <div class="schedule-details">
-                        <h3>結果の可視化と分析</h3>
-                        <p>出てきた結果を比較・分析します。</p>
-                        <ul>
-                            <li><strong>解析班:</strong> ParaViewでの結果可視化、動画作成。</li>
-                            <li><strong>実験班:</strong> 実験動画の分析。</li>
-                            <li><strong>全員:</strong> 解析結果と実験結果を並べて比較し、考察を開始。</li>
-                        </ul>
-                    </div>
+                        <h3>結果の可視化と発表資料作成</h3>
+                        <p>シミュレーション結果をParaViewなどで可視化し、分析する。合わせて、最終発表会に向けた発表資料（スライド）の作成を開始する。</p>
+                        </div>
                 </div>
 
                 <div class="schedule-card">
                     <div class="schedule-date">
                         <div class="session">第8回</div>
-                        <div class="date">1/5 (月)<br>16:10~</div>
-                    </div>
+                        <div class="date">1/26 (月)<br>16:10~</div>
+                        </div>
                     <div class="schedule-details">
-                        <h3>最終調整＆リハーサル</h3>
-                        <p>発表会に向け、資料を完成させ、発表練習を行います。</p>
-                        <ul>
-                            <li>発表スライド（背景, 目的, 手法, 結果, 考察）の完成</li>
-                            <li>発表リハーサルと質疑応答の練習</li>
-                        </ul>
-                    </div>
+                        <h3>発表練習</h3>
+                        <p>完成した発表資料を用いて、本番同様の発表練習（リハーサル）を行い、質疑応答の練習もする。</p>
+                        </div>
                 </div>
 
                 <div class="schedule-card final">
                     <div class="schedule-date">
                         <div class="session">最終発表会</div>
-                        <div class="date">1/27 (火)<br>TBD</div>
-                    </div>
+                        <div class="date">1/27 (火)</div>
+                        </div>
                     <div class="schedule-details">
                         <h3>成果発表会</h3>
-                        <p>8週間の成果を発表します。解析と実験の比較（あるいは解析同士の比較）について、自分たちの言葉で説明します。</p>
-                    </div>
+                        <!-- <p>成果を発表する。解析結果について、自分たちの言葉で説明する。</p> -->
+                        </div>
                 </div>
 
             </section>
