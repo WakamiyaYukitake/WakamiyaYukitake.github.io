@@ -4,11 +4,10 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>第2回講義資料 - PE3</title>
-    <!-- 
-      style.cssがPE3フォルダと同じ階層にあると想定し、相対パスを ../style.css に設定しています。
-      もしPE3フォルダ内にstyle.cssがある場合は、 'style.css' に変更してください。
-    -->
     <link rel="stylesheet" href="../style.css">
+
+    <script type="module" src="https://ajax.googleapis.com/ajax/libs/model-viewer/3.5.0/model-viewer.min.js"></script>
+
     <style>
         /* カード内の見出しサイズを少し調整 */
         .step-card-title {
@@ -91,41 +90,85 @@
             background: linear-gradient(90deg, var(--purple), var(--blue));
         }
 
+        /* --- ここから追加 (STLビューア用) --- */
+        .stl-viewer-container {
+            margin-top: 48px;
+            margin-bottom: 32px;
+        }
+        model-viewer {
+            width: 100%;
+            height: 500px;
+            background-color: rgba(2,6,23,0.8); /* コードブロックと背景色を合わせる */
+            border-radius: 10px;
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+        .stl-title { /* XML/BATのタイトルと共通化 */
+            font-size: 1.3em;
+            color: var(--text-light);
+            margin-bottom: 16px;
+            border-bottom: 2px solid var(--purple);
+            padding-bottom: 8px;
+        }
+        /* --- STLビューア用ここまで --- */
+
+
+        /* --- XML/BATコード表示用 --- */
+        .code-block {
+            background: rgba(2,6,23,0.8); /* 暗めの背景 */
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 10px;
+            padding: 20px;
+            overflow-x: auto; /* 横スクロール */
+            font-family: Consolas, 'Courier New', monospace;
+            font-size: 0.9em;
+            line-height: 1.6;
+            color: #f0f0f0; /* 明るいテキスト色 */
+            max-height: 500px; /* 高くなりすぎないように制限 */
+            margin-top: 16px; /* タイトルの下マージンと合わせて調整 */
+        }
+        .code-block code {
+            font-family: inherit;
+            color: inherit;
+            white-space: pre; /* 改行とスペースを保持 */
+        }
+        /* コード表示用の見出し */
+        .code-block-title {
+            font-size: 1.3em;
+            color: var(--text-light); /* style.cssにあると想定 */
+            margin-top: 48px; /* 上の要素との余白 */
+            margin-bottom: 16px;
+            border-bottom: 2px solid var(--purple);
+            padding-bottom: 8px;
+        }
+        /* --- コード表示用ここまで --- */
+
     </style>
 </head>
 <body>
 
-    <!-- サイトヘッダー (style.cssの定義に基づく) -->
     <header class="site-header">
         <div class="container">
             <div class="header-inner">
                 
-                <!-- ロゴにindex.htmlへのリンクを追加 -->
                 <a href="index.html" class="logo" style="text-decoration: none;">PE3</a>
                 
-                <!-- ナビゲーション -->
                 <nav class="site-nav">
-                  
-                    <!-- ページ内リンク (下のセクションIDに対応) -->
+                    
                     <a href="#overview">目標</a>
                     <a href="#lecture">流れ</a>
                     <a href="#exercise">詳細</a>
 
-                    <!-- index.html (同じPE3フォルダ内にあると想定) へ戻るリンク -->
                     <a href="index.html">ホームへもどる</a>
 
                 </nav>
 
-                <!-- モバイル用メニューボタン (style.cssの定義に基づく) -->
                 <button class="menu-btn" aria-label="メニューを開閉">☰</button>
             </div>
         </div>
     </header>
 
-    <!-- メインコンテンツ -->
     <main>
 
-        <!-- ヒーローセクション (ページタイトル) -->
         <section class="section section--full" style="padding-top: 80px; padding-bottom: 60px;">
             <div class="container hero-inner">
                 <h1 class="hero-title">第2回</h1>
@@ -135,21 +178,18 @@
             </div>
         </section>
 
-        <!-- 1. 概要セクション -->
         <section id="overview" class="section">
             <div class="container">
                 <h2>1. 今日の目標</h2>
-                <!-- pタグをul/liに変更し、スタイルを適用 -->
                 <ul>
-                    <li>全体の流れを理解することである。</li>
-                    <li>PLATEAU及びSPH法について概要を理解することである。</li>
-                    <li>PLATEAUについて自身で調べてみることである。</li>
-                    <li>（時間があれば）DualSPHysicsを触ってみることである。</li>
+                    <li>全体の流れを理解する。</li>
+                    <li>PLATEAU及びSPH法について概要を理解する。</li>
+                    <li>PLATEAUについて自身で調べてみる。</li>
+                    <li>（時間があれば）DualSPHysicsに触れる。</li>
                 </ul>
             </div>
         </section>
 
-        <!-- 2. 解説セクション (更新) -->
         <section id="lecture" class="section">
             <div class="container">
                 <h2>2. PLATEAUを用いた粒子法による河川氾濫解析の流れ</h2>
@@ -162,7 +202,6 @@
                     解析は、大きく分けて「3Dモデルの準備」「解析の実行」「結果の可視化」のステップで進めた。
                 </p>
 
-                <!-- style.css の .projects-grid と .card を使用したレイアウト例 -->
                 <div class="projects-grid" style="grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));">
                     
                     <div class="card">
@@ -201,9 +240,7 @@
                     </div>
                 </div>
                 
-                <!-- style.cssの .video-wrapper を使用したビデオ埋め込み例 -->
-                <div class="video-wrapper" style="margin-top: 32px;"> <!-- ビデオの上マージン調整 -->
-                    <iframe 
+                <div class="video-wrapper" style="margin-top: 32px;"> <iframe 
                         src="https://www.youtube.com/embed/krXXW6wtNzA" 
                         title="YouTube video player" 
                         frameborder="0" 
@@ -218,7 +255,6 @@
             </div>
         </section>
 
-        <!-- 3. 詳細・方向性セクション (旧 演習セクション) -->
         <section id="exercise" class="section">
             <div class="container">
                 <h2>3. 詳細</h2>
@@ -226,7 +262,6 @@
                     この解析で使用した「SPH法」という流体解析の理論と、3D都市モデルのデータソースである「PLATEAU」について、以下のリンクで詳細を確認すること。
                 </p>
 
-                <!-- SPHとPLATEAUへのリンクボタンをここに追加 -->
                 <div class="button-container">
                     <a href="https://wakamiyayukitake.github.io/SPH/SPH.html" class="btn" target="_blank" rel="noopener noreferrer">
                         SPH法について
@@ -236,19 +271,354 @@
                     </a>
                 </div>
                 
-            </div>
+                <div class="stl-viewer-container">
+                    <h4 class="stl-title">参考資料: Kumamoto5.stl (3Dモデル)</h4>
+                    <model-viewer 
+                        src="../stl/Kumamoto5.stl" 
+                        alt="Kumamoto5 3Dモデル" 
+                        auto-rotate 
+                        camera-controls
+                        shadow-intensity="1">
+                    </model-viewer>
+                    <p style="text-align: center; color: var(--muted); margin-top: 10px;">
+                        （モデルをドラッグして回転、スクロールでズームできます）
+                    </p>
+                </div>
+                <h4 class="code-block-title">参考資料: Kumamoto_c.xml (DualSPHysics設定ファイル)</h4>
+                
+                <pre class="code-block"><code>&lt;?xml version="1.0" encoding="UTF-8" ?&gt;
+&lt;case app="GenCase v5.0.278c (30-10-2023)" date="13-01-2025 18:12:12"&gt;
+    &lt;casedef&gt;
+        &lt;constantsdef&gt;
+            &lt;lattice bound="1" fluid="1" /&gt;
+            &lt;gravity x="0" y="0" z="-9.81" comment="Gravitational acceleration" units_comment="m/s^2" /&gt;
+            &lt;rhop0 value="1000" comment="Reference density of the fluid" units_comment="kg/m^3" /&gt;
+            &lt;rhopgradient value="1" comment="Initial density gradient 1:Rhop0, 2:Water column, 3:Max. water height (default=2)" /&gt;
+            &lt;hswl value="0" auto="true" comment="Maximum still water level to calculate speedofsound using coefsound" units_comment="metres (m)" /&gt;
+            &lt;gamma value="7" comment="Politropic constant for water used in the state equation" /&gt;
+            &lt;speedsystem value="10" auto="false" comment="Maximum system speed (by default the dam-break propagation is used)" /&gt;
+            &lt;coefsound value="50" comment="Coefficient to multiply speedsystem" /&gt;
+            &lt;speedsound value="0" auto="true" comment="Speed of sound to use in the simulation (by default speedofsound=coefsound*speedsystem)" /&gt;
+            &lt;coefh value="0.57" comment="Coefficient to calculate the smoothing length (h=coefh*sqrt(3*dp^2) in 3D)" /&gt;
+            &lt;cflnumber value="0.1" comment="Coefficient to multiply dt" /&gt;
+            &lt;h value="0" auto="true" units_comment="metres (m)" /&gt;
+            &lt;b value="0" auto="true" units_comment="Pascal (Pa)" /&gt;
+            &lt;massbound value="0" auto="true" units_comment="kg" /&gt;
+            &lt;massfluid value="0" auto="true" units_comment="kg" /&gt;
+        &lt;/constantsdef&gt;
+        &lt;mkconfig boundcount="240" fluidcount="10" /&gt;
+        &lt;geometry&gt;
+            &lt;definition dp="0.50" units_comment="metres (m)"&gt;
+                &lt;pointref x="0" y="0" z="0" /&gt;
+                &lt;pointmin x="0.0" y="0.0" z="0.0" /&gt;
+                &lt;pointmax x="900.0" y="700.0" z="40.0" /&gt;
+            &lt;/definition&gt;
+            &lt;commands&gt;
+                &lt;mainlist&gt;
+                    &lt;setshapemode&gt;actual | dp | bound&lt;/setshapemode&gt;
+                    &lt;!-- Bottom --&gt;
+                    &lt;setmkbound mk="1" /&gt;
+                    &lt;drawfilestl file="Kumamotodem.stl" objname="Kumamotodem" autofill="false"&gt;
+                        &lt;drawscale x="1.0" y="1.0" z="1.0" /&gt;
+                        &lt;!-- &lt;depth depthmin="10.00" /&gt; --&gt;
+                    &lt;/drawfilestl&gt;
+                    &lt;setmkbound mk="2" /&gt;
+                    &lt;drawfilestl file="Kumamotobldg.stl" objname="Kumamotobldg" autofill="false"&gt;
+                        &lt;drawscale x="1.0" y="1.0" z="1.0" /&gt;
+                    &lt;/drawfilestl&gt;
+                    &lt;shapeout file="" /&gt;
+                &lt;/mainlist&gt;
+            &lt;/commands&gt;
+        &lt;/geometry&gt;
+    &lt;/casedef&gt;
+    &lt;execution&gt;
+        &lt;special&gt;
+            &lt;inout&gt;
+                &lt;memoryresize size0="10" size="10" comment="Initial memory resize (size0) and the following memory resizes according to initial inlet/outlet particles (default=2 and 4)" /&gt;
+                &lt;determlimit value="1e+3" comment="Use 1e-3 for first_order or 1e+3 for zeroth_order (default=1e+3)" /&gt;
+                &lt;inoutzone&gt;
+                    &lt;refilling value="0" comment="Refilling mode. 0:Simple full, 1:Simple below zsurf, 2:Advanced for reverse flows (very slow) (default=1)" /&gt;
+                    &lt;inputtreatment value="0" comment="Treatment of fluid entering the zone. 0:No changes, 1:Convert fluid (necessary for outlet), 2:Remove fluid (recommended for inlet)" /&gt;
+                    &lt;layers value="4" comment="Number of inlet/outlet particle layers" /&gt;
+                    &lt;zone3d comment="Input zone for 3-D simulations"&gt;
+                        &lt;box&gt;
+                            &lt;point x="240" y="280" z="20" /&gt;
+                            &lt;size x="0" y="44.5" z="1.5" /&gt;
+                            &lt;direction x="1" y="0" z="0" /&gt;
+                        &lt;/box&gt;
+                    &lt;/zone3d&gt;
+                    &lt;imposevelocity mode="0" comment="Imposed velocity 0:fixed value, 1:variable value, 2:Extrapolated value (default=0)"&gt;
+                        &lt;velocity v="1" comment="Uniform velocity" units_comment="m/s" /&gt;
+                    &lt;/imposevelocity&gt;
+                    &lt;imposerhop mode="0" comment="Outlet rhop 0:Imposed fixed value, 1:Hydrostatic, 2:Extrapolated from ghost nodes (default=0)" /&gt;
+                &lt;/inoutzone&gt;
+            &lt;/inout&gt;
+        &lt;/special&gt;
+        &lt;parameters&gt;
+            &lt;parameter key="SavePosDouble" value="0" comment="Saves particle position using double precision (default=0)" /&gt;
+            &lt;parameter key="StepAlgorithm" value="2" comment="Step Algorithm 1:Verlet, 2:Symplectic (default=1)" /&gt;
+            &lt;parameter key="VerletSteps" value="0" comment="Verlet only: Number of steps to apply Euler timestepping (default=40)" /&gt;
+            &lt;parameter key="Kernel" value="2" comment="Interaction Kernel 1:Cubic Spline, 2:Wendland (default=2)" /&gt;
+            &lt;parameter key="ViscoTreatment" value="2" comment="Viscosity formulation 1:Artificial, 2:Laminar+SPS (default=1)" /&gt;
+            &lt;parameter key="Visco" value="0.000001" comment="Viscosity value" /&gt;
+            &lt;parameter key="ViscoBoundFactor" value="1" comment="Multiply viscosity value with boundary (default=1)" /&gt;
+            &lt;parameter key="DensityDT" value="3" comment="Density Diffusion Term 0:None, 1:Molteni, 2:Fourtakas, 3:Fourtakas(full) (default=0)" /&gt;
+            &lt;parameter key="DensityDTvalue" value="0.1" comment="DDT value (default=0.1)" /&gt;
+            &lt;parameter key="Shifting" value="0" comment="Shifting mode 0:None, 1:Ignore bound, 2:Ignore fixed, 3:Full (default=0)" /&gt;
+            &lt;parameter key="ShiftCoef" value="-2" comment="Coefficient for shifting computation (default=-2)" /&gt;
+            &lt;parameter key="ShiftTFS" value="0" comment="Threshold to detect free surface. Typically 1.5 for 2D and 2.75 for 3D (default=0)" /&gt;
+            &lt;parameter key="RigidAlgorithm" value="1" comment="Rigid Algorithm 0:collision-free, 1:SPH, 2:DEM, 3:Chrono (default=1)" /&gt;
+            &lt;parameter key="FtPause" value="0.0" comment="Time to freeze the floatings at simulation start (warmup) (default=0)" units_comment="seconds" /&gt;
+            &lt;parameter key="CoefDtMin" value="0.01" comment="Coefficient to calculate minimum time step dtmin=coefdtmin*h/speedsound (default=0.05)" /&gt;
+            &lt;parameter key="DtIni" value="0" comment="Initial time step. Use 0 to defult use (default=h/speedsound)" units_comment="seconds" /&gt;
+            &lt;parameter key="DtMin" value="0" comment="Minimum time step. Use 0 to defult use (default=coefdtmin*h/speedsound)" units_comment="seconds" /&gt;
+            &lt;parameter key="DtFixed" value="0" comment="Fixed Dt value. Use 0 to disable (default=disabled)" units_comment="seconds" /&gt;
+            &lt;parameter key="DtFixedFile" value="NONE" comment="Dt values are loaded from file. Use NONE to disable (default=disabled)" units_comment="milliseconds (ms)" /&gt;
+            &lt;parameter key="DtAllParticles" value="1" comment="Velocity of particles used to calculate DT. 1:All, 0:Only fluid/floating (default=0)" /&gt;
+            &lt;parameter key="TimeMax" value="600" comment="Time of simulation" units_comment="seconds" /&gt;
+            &lt;parameter key="TimeOut" value="10" comment="Time out data" units_comment="seconds" /&gt;
+            &lt;parameter key="PartsOutMax" value="1" comment="Allowed %/100 of fluid particles out the domain (default=1)" units_comment="decimal" /&gt;
+            &lt;parameter key="RhopOutMin" value="0" comment="Minimum rhop valid (default=700)" units_comment="kg/m^3" /&gt;
+            &lt;parameter key="RhopOutMax" value="10000" comment="Maximum rhop valid (default=1300)" units_comment="kg/m^3" /&gt;
+            &lt;parameter key="WrnPartsOut" value="0" comment="Active warning according to number of out particles (default=1)" /&gt;
+            &lt;simulationdomain comment="Defines domain of simulation (default=Uses minimun and maximum position of the generated particles)"&gt;
+                &lt;posmin x="default" y="default" z="default" comment="e.g.: x=0.5, y=default-1, z=default-10%" /&gt;
+                &lt;posmax x="default" y="default" z="default" /&gt;
+            &lt;/simulationdomain&gt;
+        &lt;/parameters&gt;
+        &lt;particles np="7618629" nb="7618629" nbf="7618629" mkboundfirst="11" mkfluidfirst="1"&gt;
+            &lt;_summary&gt;
+                &lt;positions units_comment="metres (m)"&gt;
+                    &lt;posmin x="0" y="0" z="8" /&gt;
+                    &lt;posmax x="899.5" y="699.5" z="39.5" /&gt;
+                &lt;/positions&gt;
+                &lt;fixed count="7618629" id="0-7618628" mkcount="2" mkvalues="12-13" /&gt;
+            &lt;/_summary&gt;
+            &lt;fixed mkbound="1" mk="12" begin="0" count="4109807" /&gt;
+            &lt;fixed mkbound="2" mk="13" begin="4109807" count="3508822" /&gt;
+        &lt;/particles&gt;
+        &lt;constants&gt;
+            &lt;data2d value="false" /&gt;
+            &lt;gravity x="0" y="0" z="-9.81" units_comment="m/s^2" /&gt;
+            &lt;cflnumber value="0.1" /&gt;
+            &lt;gamma value="7" /&gt;
+            &lt;rhop0 value="1000" units_comment="kg/m^3" /&gt;
+            &lt;dp value="0.5" units_comment="metres (m)" /&gt;
+            &lt;h value="0.49363448016" units_comment="metres (m)" /&gt;
+            &lt;b value="57142.857143" units_comment="Pascal (Pa)" /&gt;
+            &lt;massbound value="125" units_comment="kg" /&gt;
+            &lt;massfluid value="125" units_comment="kg" /&gt;
+        &lt;/constants&gt;
+        &lt;uservars&gt;
+            &lt;varnum name="MResId" value="0" /&gt;
+        &lt;/uservars&gt;
+        &lt;motion /&gt;
+        &lt;vtkout mkboundfirst="11" mkfluidfirst="1"&gt;
+            &lt;vtkfile name="Kumamoto__Dp.vtk" mk="12-13" mkbound="1-2" /&gt;
+            &lt;vtkfile name="Kumamoto__Actual.vtk" mk="12-13" mkbound="1-2" /&gt;
+        &lt;/vtkout&gt;
+    &lt;/execution&gt;
+&lt;/case&gt;</code></pre>
+                <h4 class="code-block-title">参考資料: wKumamoto_sin64_GPU.bat (実行バッチファイル)</h4>
+                
+                <pre class="code-block"><code>@echo off
+setlocal EnableDelayedExpansion
+rem Don't remove the two jump line after than the next line [set NL=^]
+set NL=^
+
+
+rem "name" and "dirout" are named according to the testcase
+
+set name=Kumamoto_c
+set dirout=%name%_out
+set diroutdata=%dirout%\data
+
+rem "executables" are renamed and called from their directory
+
+set dirbin=../../../bin/windows
+set gencase="%dirbin%/GenCase_win64.exe"
+set dualsphysicscpu="%dirbin%/DualSPHysics5.2CPU_win64.exe"
+set dualsphysicsgpu="%dirbin%/DualSPHysics5.2_win64.exe"
+set boundaryvtk="%dirbin%/BoundaryVTK_win64.exe"
+set partvtk="%dirbin%/PartVTK_win64.exe"
+set partvtkout="%dirbin%/PartVTKOut_win64.exe"
+set measuretool="%dirbin%/MeasureTool_win64.exe"
+set computeforces="%dirbin%/ComputeForces_win64.exe"
+set isosurface="%dirbin%/IsoSurface_win64.exe"
+set flowtool="%dirbin%/FlowTool_win64.exe"
+set floatinginfo="%dirbin%/FloatingInfo_win64.exe"
+set tracerparts="%dirbin%/TracerParts_win64.exe"
+
+@REM :menu
+@REM if exist %dirout% ( 
+@REM 	set /p option="The folder "%dirout%" already exists. Choose an option.!NL!  [1]- Delete it and continue.!NL!  [2]- Execute post-processing.!NL!  [3]- Abort and exit.!NL!"
+@REM 	if "!option!" == "1" goto run else (
+@REM 		if "!option!" == "2" goto postprocessing else (
+@REM 			if "!option!" == "3" goto fail else ( 
+@REM 				goto menu
+@REM 			)
+@REM 		)
+@REM 	)
+@REM )
+
+@REM :run
+@REM rem "dirout" to store results is removed if it already exists
+@REM if exist %dirout% rd /s /q %dirout%
+
+@REM rem CODES are executed according the selected parameters of execution in this testcase
+
+@REM %gencase% %name% %dirout%/%name% -save:all
+@REM if not "%ERRORLEVEL%" == "0" goto fail
+
+@REM %dualsphysicsgpu% -gpu %dirout%/%name% %dirout% -dirdataout data -svres
+@REM if not "%ERRORLEVEL%" == "0" goto fail
+
+@REM :postprocessing
+@REM set dirout2=%dirout%\particles
+@REM %partvtk% -dirin %diroutdata% -savevtk %dirout2%/PartFluid -onlytype:-all,fluid
+@REM if not "%ERRORLEVEL%" == "0" goto fail
+
+@REM %partvtkout% -dirin %diroutdata% -savevtk %dirout2%/PartFluidOut -SaveResume %dirout2%/_ResumeFluidOut
+@REM if not "%ERRORLEVEL%" == "0" goto fail
+
+
+
+
+
+
+@REM rem A5の面における圧力及び流速、力
+@REM rem MeasureTool_pressure
+@REM set dirout2=%dirout%\A5
+@REM %measuretool% -dirin %diroutdata% -pointsdef:ptls[x=367.5:0.5:1,y=319:0.5:8,z=16:0.5:20] -first:60 -last:60 -vars:-all,+press,-pressh,+mass -savevtk %dirout2%/pressure
+
+@REM rem MeasureTool_vel366.5
+@REM set dirout2=%dirout%\A5
+@REM %measuretool% -dirin %diroutdata% -pointsdef:ptls[x=366.5:0.5:1,y=319:0.5:8,z=16:0.5:20] -first:60 -last:60 -kcusedummy:0 -vars:-all,+vel -savevtk %dirout2%/velocity3665
+
+@REM rem MeasureTool_vel367
+@REM set dirout2=%dirout%\A5
+@REM %measuretool% -dirin %diroutdata% -pointsdef:ptls[x=367:0.5:1,y=319:0.5:8,z=16:0.5:20] -first:60 -last:60 -kcusedummy:0 -vars:-all,+vel -savevtk %dirout2%/velocity3670
+
+@REM rem ComputeForces
+@REM set dirout3=%dirout%\A5
+@REM %computeforces% -dirin %diroutdata% -onlypos:367.5:319:16:368:323:26 -first:60 -last:60 -viscoauto -savevtk %dirout3%/ComputeForces
+
+@REM rem 枠
+@REM set dirout3=%dirout%\A5
+@REM %computeforces% -dirin %diroutdata% -onlypos:367:318.5:15.5:368.5:323.5:26.5 -first:60 -last:60 -viscoauto -savevtk %dirout3%/axes
+
+
+
+
+
+
+
+rem MeasureTool深水深
+@REM set dirout2=%dirout%\measuretool
+@REM %measuretool% -dirin %diroutdata% -pointsdef:ptls[x=200:0.5:1100,y=0:0.5:1500,z=13:0.5:80] -masslimit:0.1 -first:0 -last:600 -onlymk:0 -hvars:+depthrhop,+depthsum -savevtk %dirout2%/EtaPoints -savecsv %dirout%/MeasuredA
+
+rem ComputeForces受ける力全部
+@REM set dirout3=%dirout%\computeforces
+@REM %computeforces% -dirin %diroutdata% -onlypos:200:0:0:1100:1500:80 -first:60 -last:60 -viscoauto -savevtk %dirout3%/ComputeForces
+
+@REM set dirout3=%dirout%\computeforces
+@REM %computeforces% -dirin %diroutdata% -onlypos:240:200:0:390:350:80 -first:0 -last:600 -viscoauto -savevtk %dirout3%/ComputeForces
+
+rem ComputeForces建物が受ける力
+@REM set dirout3=%dirout%\computeforces
+@REM %computeforces% -dirin %diroutdata% -onlymk:13 -first:0 -last:60 -viscoauto -savevtk %dirout3%/ComputeForces
+
+rem 地表面のForces
+@REM set dirout3=%dirout%\computeforces
+@REM %computeforces% -dirin %diroutdata% -onlymk:11 -first:60 -last:60 -viscoauto -savevtk %dirout3%/ComputeForces
+
+rem IsoSurFace自由表面
+@REM set dirout4=%dirout%\isosurface
+@REM %isosurface% -dirin %diroutdata% -distinter_2h:1.0 -first:0 -last:60 -saveiso %dirout4%/IsoSurface
+
+
+rem TracerParts
+@REM set dirout5=%dirout%\tracerparts
+@REM %tracerparts% -dirin %diroutdata% -onlymk:+all -tailsize:600 -vars:+all -drawlines -first:0 -last:600 -savevtk %dirout5%/TracerParts
+
+
+@REM rem 2025/07/26
+@REM set dirout2=%dirout%\Afull
+@REM %computeforces% -dirin %diroutdata% -onlymk:13 -onlypos:365:302:16.5:370:336:26 -first:0 -last:60 -viscoauto -savevtk %dirout2%/ForceA
+
+rem 2025/07/28
+set dirout2=%dirout%\Ay320
+%computeforces% -dirin %diroutdata% -onlymk:13 -onlypos:365:320:17:370:320.5:17.5 -first:0 -last:60 -viscoauto -savevtk %dirout2%/ForceA
+
+
+
+
+@REM rem Executes MeasureTool to create VTK and CSV files with elevation at each simulation time.
+@REM set dirout2=%dirout%\measuretool
+@REM %measuretool% -dirin %diroutdata% -pointsdef:ptls[x=0:0.5:1500,y=0:0.5:1500,z=0:0.5:40] -onlytype:-all,+fluid -hvars:+depthsum -savevtk %dirout2%/EtaPoints -savecsv %dirout%/MeasuredA
+@REM if not "%ERRORLEVEL%" == "0" goto fail
+
+
+
+@REM set dirout2=%dirout%\measuretool
+@REM %measuretool% -dirin %diroutdata% -pointsdef:ptels[x=90:0.5:600, y=0:0.5:600, z=13:0.1:23] -onlymk:0 -hvars:+eta,+depthsum -first:600 -last:600 -savevtk %dirout2%/EtaPoints -savecsv %dirout%/MeasuredA
+
+
+
+
+
+
+
+
+
+@REM rem Executes PartVTKOut to create VTK files with excluded particles.
+@REM %partvtkout% -dirin %diroutdata% -savevtk %dirout2%/PartFluidOut -SaveResume %dirout2%/_ResumeFluidOut
+@REM if not "%ERRORLEVEL%" == "0" goto fail
+
+@REM rem Executes PartVTK to create CSV with energy values.
+@REM %partvtk% -dirin %diroutdata% -saveenergy %dirout%/Energy -last:90
+@REM if not "%ERRORLEVEL%" == "0" goto fail
+
+@REM rem Executes TracerParts to create VTK files with trajectory of some fluid particles.
+@REM set dirout2=%dirout%\tracer
+@REM %tracerparts% -dirin %diroutdata% -savevtk %dirout2%/BorderParts -onlytype:-all,+fluid -nearpartsdist:0.02 -nearpartsdef:pt=0.1:0:0.1,pt=0.15:0:0.15,pt=0.2:0:0.2,ptels[x=1:0:1,z=0:0.05:2],ptels[x=0:0.05:1,z=2:0:2] -tailsize:200
+@REM if not "%ERRORLEVEL%" == "0" goto fail
+
+@REM rem Executes MeasureTool to create VTK and CSV files with elevation at each simulation time.
+@REM set dirout2=%dirout%\measuretool
+@REM %measuretool% -dirin %diroutdata% -pointsdef:ptls[x=200:0.5:600,y=200:0.5:600,z=0:0:40] -onlytype:-all,+fluid -elevation -savevtk %dirout2%/EtaPoints -savecsv %dirout%/MeasuredA
+@REM if not "%ERRORLEVEL%" == "0" goto fail
+
+@REM rem Executes MeasureTool to create VTK and CSV files with velocity and pressure at 2 points.
+@REM %measuretool% -dirin %diroutdata% -pointsdef:pt=0.2:0:0.2,pt=0.4:0:0.2 -onlytype:-all,+fluid -vars:-all,vel,press -savevtk %dirout2%/CheckPoints -savecsv %dirout%/MeasuredB
+@REM if not "%ERRORLEVEL%" == "0" goto fail
+
+@REM rem Executes IsoSurface to create VTK files with slices of surface.
+@REM set dirout2=%dirout%\surface
+@REM %isosurface% -dirin %diroutdata% -saveslice %dirout2%/Slices 
+@REM if not "%ERRORLEVEL%" == "0" goto fail
+
+
+:success
+echo All done
+goto end
+
+:fail
+echo Execution aborted.
+
+:end
+pause</code></pre>
+                </div>
         </section>
 
     </main>
 
-    <!-- サイトフッター -->
     <footer class="site-footer">
         <div class="container">
             <p class="small-muted">&copy; 2025 Wakamiya Yukitake.</p>
         </div>
     </footer>
 
-    <!-- モバイルメニュー用のスクリプト (style.cssの機能に必要) -->
     <script>
         // フェードインアニメーション (style.cssの .section のため)
         document.addEventListener('DOMContentLoaded', () => {
