@@ -116,7 +116,7 @@
                     
                     <a href="#overview">目標</a>
                     <a href="#lecture">手順</a>
-                    <a href="#exercise">資料・提出</a>
+                    <a href="#exercise">詳細・提出</a>
 
                     <a href="index.html">ホームへもどる</a>
 
@@ -152,10 +152,10 @@
             <div class="container">
                 <h2>2. 3Dモデル作成の手順</h2>
                 <p>
-                    流体解析を行うためには、地形や建物の形状データ（STLファイル）が必要である。今回はオープンデータであるPLATEAUを使用し、解析用のモデルを作成する。
+                    オープンデータであるPLATEAUから解析用の3Dモデルを作成する。
                 </p>
                 
-                <h3 style="margin-top: 32px; margin-bottom: 24px; font-size: 1.5em; text-align: center;">作業プロセス</h3>
+                <h3 style="margin-top: 32px; margin-bottom: 24px; font-size: 1.5em; text-align: center;">プロセス</h3>
                 <p style="text-align: center; max-width: 700px; margin: 0 auto 24px auto; color: var(--muted);">
                     大まかな流れは以下の通りである。
                 </p>
@@ -172,14 +172,14 @@
                     <div class="card">
                         <h3 class="step-card-title">2. データ取得</h3>
                         <p class="small-muted">
-                            PLATEAUの公式サイト（G空間情報センター）から、自身が解析対象としたい都市の3D都市モデルデータをダウンロードする。
+                            PLATEAUのサイト（G空間情報センター）から、解析対象としたい都市の3D都市モデルデータをダウンロードする。
                         </p>
                     </div>
 
                     <div class="card">
                         <h3 class="step-card-title">3. 範囲選択</h3>
                         <p class="small-muted">
-                            UnityでPLATEAUデータを読み込み、SDKの機能を使って解析したい範囲を選択する。今回はグリッド4個分を目安とする。
+                            UnityでPLATEAUデータを読み込み、SDKの機能を使って解析したい範囲を選択する。目安はグリッド4個分とする。
                         </p>
                     </div>
 
@@ -225,7 +225,10 @@
                         インストール手順書
                     </a>
                     <a href="https://unity3d.com/jp/get-unity/download" class="btn" target="_blank" rel="noopener noreferrer">
-                        Unity
+                        Unity Hub
+                    </a>
+                    <a href="https://unity.com/releases/editor/whats-new/2022.3.25f1" class="btn" target="_blank" rel="noopener noreferrer">
+                        Unity 2022.3.25f1
                     </a>
                     <a href="https://github.com/Project-PLATEAU/PLATEAU-SDK-for-Unity/releases" class="btn" target="_blank" rel="noopener noreferrer">
                         PLATEAU SDK for Unity
@@ -242,7 +245,7 @@
 
                 <h4 style="color: var(--text-light); border-left: 4px solid #d53369; padding-left: 10px;">stlファイル</h4>
                 <p>
-                    作成したSTLファイル（地形および建物）は、以下のGoogleドライブにアップロードすること。
+                    作成したSTLファイル（地形および建物）は、以下のGoogleドライブにアップロードする。
                 </p>
 
                 <div class="button-container">
