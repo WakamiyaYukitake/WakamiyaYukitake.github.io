@@ -1,0 +1,370 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>XML Generator - PE3</title>
+    <link rel="stylesheet" href="../style.css">
+    <style>
+        :root {
+            --blue: #0b5fff;
+            --purple: #6a4ccc;
+            --muted: #8892b0;
+            --text-light: #e6f1ff;
+            --bg-dark: #0a192f;
+        }
+        body {
+            background-color: var(--bg-dark);
+            color: var(--text-light);
+            font-family: sans-serif;
+            margin: 0;
+            padding: 40px 20px;
+        }
+        .container { max-width: 800px; margin: 0 auto; }
+        
+        h1 {
+            text-align: center;
+            background: linear-gradient(120deg, #00C9FF, #92FE9D);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 40px;
+        }
+
+        .form-group {
+            margin-bottom: 24px;
+            background: rgba(255,255,255,0.03);
+            padding: 20px;
+            border-radius: 10px;
+            border: 1px solid rgba(255,255,255,0.05);
+        }
+        
+        label {
+            display: block;
+            margin-bottom: 8px;
+            color: var(--blue);
+            font-weight: bold;
+        }
+        
+        .desc {
+            font-size: 0.85em;
+            color: var(--muted);
+            margin-bottom: 12px;
+        }
+
+        input[type="text"], input[type="number"] {
+            width: 100%;
+            padding: 12px;
+            background: rgba(0,0,0,0.3);
+            border: 1px solid var(--muted);
+            border-radius: 6px;
+            color: white;
+            box-sizing: border-box;
+            font-size: 1em;
+        }
+        
+        input:focus {
+            outline: none;
+            border-color: var(--blue);
+        }
+
+        .row {
+            display: flex;
+            gap: 10px;
+        }
+        .col { flex: 1; }
+
+        .btn-generate {
+            display: block;
+            width: 100%;
+            padding: 16px;
+            font-size: 1.2em;
+            font-weight: bold;
+            color: #0a192f;
+            background: linear-gradient(90deg, #00C9FF, #92FE9D);
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+            margin-top: 30px;
+        }
+        .btn-generate:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(0, 201, 255, 0.3);
+        }
+
+        textarea {
+            width: 100%;
+            height: 300px;
+            background: #020610;
+            color: #a0a0a0;
+            padding: 15px;
+            border-radius: 8px;
+            border: 1px solid rgba(255,255,255,0.1);
+            font-family: monospace;
+            margin-top: 20px;
+            resize: vertical;
+        }
+        
+        .action-btns {
+            display: flex;
+            gap: 10px;
+            margin-top: 10px;
+        }
+        .btn-sub {
+            padding: 10px 20px;
+            background: rgba(255,255,255,0.1);
+            color: white;
+            border: 1px solid rgba(255,255,255,0.2);
+            border-radius: 6px;
+            cursor: pointer;
+            text-decoration: none;
+            display: inline-block;
+            text-align: center;
+        }
+        .btn-sub:hover { background: rgba(255,255,255,0.2); }
+        
+        .back-link {
+            display: block;
+            text-align: center;
+            margin-top: 40px;
+            color: var(--muted);
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>XML Kit</h1>
+    <p style="text-align: center; color: var(--muted); margin-bottom: 40px;">
+        Blenderで決定した数値などを入力して、解析用XMLファイルを作成する。
+    </p>
+
+    <form id="xmlForm">
+        <div class="form-group">
+            <label>STLファイル名 (拡張子 .stl を含む)</label>
+            <div class="desc">地形(DEM)と建物(Bldg)のファイル名を入力してください。</div>
+            <div class="row">
+                <div class="col">
+                    <input type="text" id="fileDem" value="Kumamotodem.stl" placeholder="地形: example_dem.stl">
+                </div>
+                <div class="col">
+                    <input type="text" id="fileBldg" value="Kumamotobldg.stl" placeholder="建物: example_bldg.stl">
+                </div>
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label>解析領域 (Simulation Domain Max)</label>
+            <div class="desc">解析する空間の最大座標 (Point Max)。最小座標は(0,0,0)とする。</div>
+            <div class="row">
+                <div class="col"><input type="number" id="domainX" value="900.0" step="0.5" placeholder="X"></div>
+                <div class="col"><input type="number" id="domainY" value="700.0" step="0.5" placeholder="Y"></div>
+                <div class="col"><input type="number" id="domainZ" value="40.0" step="0.5" placeholder="Z"></div>
+            </div>
+        </div>
+
+        <div class="form-group" style="border-left: 4px solid #00C9FF;">
+            <label>流入ボックス: 位置 (Position)</label>
+            <div class="desc">Blenderの「アイテム > 位置」で設定した座標を入力。</div>
+            <div class="row">
+                <div class="col"><input type="number" id="inflowPosX" value="240" step="0.5"></div>
+                <div class="col"><input type="number" id="inflowPosY" value="280" step="0.5"></div>
+                <div class="col"><input type="number" id="inflowPosZ" value="20" step="0.5"></div>
+            </div>
+        </div>
+
+        <div class="form-group" style="border-left: 4px solid #00C9FF;">
+            <label>流入ボックス: サイズ (Size)</label>
+            <div class="desc">Blenderの「アイテム > 寸法」で確認したサイズを入力。</div>
+            <div class="row">
+                <div class="col"><input type="number" id="inflowSizeX" value="0" step="0.1" placeholder="X (通常0)"></div>
+                <div class="col"><input type="number" id="inflowSizeY" value="44.5" step="0.5" placeholder="Y"></div>
+                <div class="col"><input type="number" id="inflowSizeZ" value="1.5" step="0.5" placeholder="Z"></div>
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label>その他の設定</label>
+            <div class="row">
+                <div class="col">
+                    <label style="font-size: 0.9em;">流入流速 (m/s)</label>
+                    <input type="number" id="velocity" value="1" step="0.1">
+                </div>
+                <div class="col">
+                    <label style="font-size: 0.9em;">Layers</label>
+                    <input type="number" id="layers" value="4" step="1">
+                </div>
+            </div>
+        </div>
+
+        <button type="button" class="btn-generate" onclick="generateXML()">XMLを作成</button>
+    </form>
+
+    <div id="resultArea" style="display:none; margin-top: 40px;">
+        <h3 style="color: white;">作成結果</h3>
+        <textarea id="outputXml" readonly></textarea>
+        <div class="action-btns">
+            <button class="btn-sub" onclick="copyToClipboard()">クリップボードにコピー</button>
+            <a id="downloadLink" class="btn-sub" style="background: var(--blue); border:none;">ダウンロード (.xml)</a>
+        </div>
+    </div>
+
+    <a href="4.html" class="back-link">← 第４回資料に戻る</a>
+</div>
+
+<script>
+    function generateXML() {
+        // 値の取得
+        const fileDem = document.getElementById('fileDem').value;
+        const fileBldg = document.getElementById('fileBldg').value;
+        
+        // オブジェクト名（拡張子なし）を生成
+        const objNameDem = fileDem.replace('.stl', '');
+        const objNameBldg = fileBldg.replace('.stl', '');
+
+        const domX = document.getElementById('domainX').value;
+        const domY = document.getElementById('domainY').value;
+        const domZ = document.getElementById('domainZ').value;
+
+        const posX = document.getElementById('inflowPosX').value;
+        const posY = document.getElementById('inflowPosY').value;
+        const posZ = document.getElementById('inflowPosZ').value;
+
+        const sizeX = document.getElementById('inflowSizeX').value;
+        const sizeY = document.getElementById('inflowSizeY').value;
+        const sizeZ = document.getElementById('inflowSizeZ').value;
+
+        const vel = document.getElementById('velocity').value;
+        const layers = document.getElementById('layers').value;
+
+        // 日付生成
+        const now = new Date();
+        const dateStr = `${String(now.getDate()).padStart(2,'0')}-${String(now.getMonth()+1).padStart(2,'0')}-${now.getFullYear()} ${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}:${String(now.getSeconds()).padStart(2,'0')}`;
+
+        // XMLテンプレート
+        const xmlContent = `<?xml version="1.0" encoding="UTF-8" ?>
+<case app="GenCase v5.0.278c (30-10-2023)" date="${dateStr}">
+    <casedef>
+        <constantsdef>
+            <lattice bound="1" fluid="1" />
+            <gravity x="0" y="0" z="-9.81" comment="Gravitational acceleration" units_comment="m/s^2" />
+            <rhop0 value="1000" comment="Reference density of the fluid" units_comment="kg/m^3" />
+            <rhopgradient value="1" comment="Initial density gradient 1:Rhop0, 2:Water column, 3:Max. water height (default=2)" />
+            <hswl value="0" auto="true" comment="Maximum still water level to calculate speedofsound using coefsound" units_comment="metres (m)" />
+            <gamma value="7" comment="Politropic constant for water used in the state equation" />
+            <speedsystem value="10" auto="false" comment="Maximum system speed (by default the dam-break propagation is used)" />
+            <coefsound value="50" comment="Coefficient to multiply speedsystem" />
+            <speedsound value="0" auto="true" comment="Speed of sound to use in the simulation (by default speedofsound=coefsound*speedsystem)" />
+            <coefh value="0.57" comment="Coefficient to calculate the smoothing length (h=coefh*sqrt(3*dp^2) in 3D)" />
+            <cflnumber value="0.1" comment="Coefficient to multiply dt" />
+            <h value="0" auto="true" units_comment="metres (m)" />
+            <b value="0" auto="true" units_comment="Pascal (Pa)" />
+            <massbound value="0" auto="true" units_comment="kg" />
+            <massfluid value="0" auto="true" units_comment="kg" />
+        </constantsdef>
+        <mkconfig boundcount="240" fluidcount="10" />
+        <geometry>
+            <definition dp="0.50" units_comment="metres (m)">
+                <pointref x="0" y="0" z="0" />
+                <pointmin x="0.0" y="0.0" z="0.0" />
+                <pointmax x="${domX}" y="${domY}" z="${domZ}" />
+            </definition>
+            <commands>
+                <mainlist>
+                    <setshapemode>actual | dp | bound</setshapemode>
+                    <setmkbound mk="1" />
+                    <drawfilestl file="${fileDem}" objname="${objNameDem}" autofill="false">
+                        <drawscale x="1.0" y="1.0" z="1.0" />
+                        </drawfilestl>
+                    <setmkbound mk="2" />
+                    <drawfilestl file="${fileBldg}" objname="${objNameBldg}" autofill="false">
+                        <drawscale x="1.0" y="1.0" z="1.0" />
+                    </drawfilestl>
+                    <shapeout file="" />
+                </mainlist>
+            </commands>
+        </geometry>
+    </casedef>
+    <execution>
+        <special>
+            <inout>
+                <memoryresize size0="10" size="10" comment="Initial memory resize (size0) and the following memory resizes according to initial inlet/outlet particles (default=2 and 4)" />
+                <determlimit value="1e+3" comment="Use 1e-3 for first_order or 1e+3 for zeroth_order (default=1e+3)" />
+                <inoutzone>
+                    <refilling value="0" comment="Refilling mode. 0:Simple full, 1:Simple below zsurf, 2:Advanced for reverse flows (very slow) (default=1)" />
+                    <inputtreatment value="0" comment="Treatment of fluid entering the zone. 0:No changes, 1:Convert fluid (necessary for outlet), 2:Remove fluid (recommended for inlet)" />
+                    <layers value="${layers}" comment="Number of inlet/outlet particle layers" />
+                    <zone3d comment="Input zone for 3-D simulations">
+                        <box>
+                            <point x="${posX}" y="${posY}" z="${posZ}" />
+                            <size x="${sizeX}" y="${sizeY}" z="${sizeZ}" />
+                            <direction x="1" y="0" z="0" />
+                        </box>
+                    </zone3d>
+                    <imposevelocity mode="0" comment="Imposed velocity 0:fixed value, 1:variable value, 2:Extrapolated value (default=0)">
+                        <velocity v="${vel}" comment="Uniform velocity" units_comment="m/s" />
+                    </imposevelocity>
+                    <imposerhop mode="0" comment="Outlet rhop 0:Imposed fixed value, 1:Hydrostatic, 2:Extrapolated from ghost nodes (default=0)" />
+                </inoutzone>
+            </inout>
+        </special>
+        <parameters>
+            <parameter key="SavePosDouble" value="0" comment="Saves particle position using double precision (default=0)" />
+            <parameter key="StepAlgorithm" value="2" comment="Step Algorithm 1:Verlet, 2:Symplectic (default=1)" />
+            <parameter key="VerletSteps" value="0" comment="Verlet only: Number of steps to apply Euler timestepping (default=40)" />
+            <parameter key="Kernel" value="2" comment="Interaction Kernel 1:Cubic Spline, 2:Wendland (default=2)" />
+            <parameter key="ViscoTreatment" value="2" comment="Viscosity formulation 1:Artificial, 2:Laminar+SPS (default=1)" />
+            <parameter key="Visco" value="0.000001" comment="Viscosity value" />
+            <parameter key="ViscoBoundFactor" value="1" comment="Multiply viscosity value with boundary (default=1)" />
+            <parameter key="DensityDT" value="3" comment="Density Diffusion Term 0:None, 1:Molteni, 2:Fourtakas, 3:Fourtakas(full) (default=0)" />
+            <parameter key="DensityDTvalue" value="0.1" comment="DDT value (default=0.1)" />
+            <parameter key="Shifting" value="0" comment="Shifting mode 0:None, 1:Ignore bound, 2:Ignore fixed, 3:Full (default=0)" />
+            <parameter key="ShiftCoef" value="-2" comment="Coefficient for shifting computation (default=-2)" />
+            <parameter key="ShiftTFS" value="0" comment="Threshold to detect free surface. Typically 1.5 for 2D and 2.75 for 3D (default=0)" />
+            <parameter key="RigidAlgorithm" value="1" comment="Rigid Algorithm 0:collision-free, 1:SPH, 2:DEM, 3:Chrono (default=1)" />
+            <parameter key="FtPause" value="0.0" comment="Time to freeze the floatings at simulation start (warmup) (default=0)" units_comment="seconds" />
+            <parameter key="CoefDtMin" value="0.01" comment="Coefficient to calculate minimum time step dtmin=coefdtmin*h/speedsound (default=0.05)" />
+            <parameter key="DtIni" value="0" comment="Initial time step. Use 0 to defult use (default=h/speedsound)" units_comment="seconds" />
+            <parameter key="DtMin" value="0" comment="Minimum time step. Use 0 to defult use (default=coefdtmin*h/speedsound)" units_comment="seconds" />
+            <parameter key="DtFixed" value="0" comment="Fixed Dt value. Use 0 to disable (default=disabled)" units_comment="seconds" />
+            <parameter key="DtFixedFile" value="NONE" comment="Dt values are loaded from file. Use NONE to disable (default=disabled)" units_comment="milliseconds (ms)" />
+            <parameter key="DtAllParticles" value="1" comment="Velocity of particles used to calculate DT. 1:All, 0:Only fluid/floating (default=0)" />
+            <parameter key="TimeMax" value="600" comment="Time of simulation" units_comment="seconds" />
+            <parameter key="TimeOut" value="10" comment="Time out data" units_comment="seconds" />
+            <parameter key="PartsOutMax" value="1" comment="Allowed %/100 of fluid particles out the domain (default=1)" units_comment="decimal" />
+            <parameter key="RhopOutMin" value="0" comment="Minimum rhop valid (default=700)" units_comment="kg/m^3" />
+            <parameter key="RhopOutMax" value="10000" comment="Maximum rhop valid (default=1300)" units_comment="kg/m^3" />
+            <parameter key="WrnPartsOut" value="0" comment="Active warning according to number of out particles (default=1)" />
+            <simulationdomain comment="Defines domain of simulation (default=Uses minimun and maximum position of the generated particles)">
+                <posmin x="default" y="default" z="default" comment="e.g.: x=0.5, y=default-1, z=default-10%" />
+                <posmax x="default" y="default" z="default" />
+            </simulationdomain>
+        </parameters>
+    </execution>
+</case>`;
+
+        // 表示
+        const output = document.getElementById('outputXml');
+        output.value = xmlContent;
+        document.getElementById('resultArea').style.display = 'block';
+
+        // ダウンロードリンク作成
+        const blob = new Blob([xmlContent], { type: 'text/xml' });
+        const url = URL.createObjectURL(blob);
+        const link = document.getElementById('downloadLink');
+        link.href = url;
+        link.download = 'Case_Def.xml';
+    }
+
+    function copyToClipboard() {
+        const copyText = document.getElementById("outputXml");
+        copyText.select();
+        copyText.setSelectionRange(0, 99999); 
+        navigator.clipboard.writeText(copyText.value).then(() => {
+            alert("コピーしました");
+        });
+    }
+</script>
+
+</body>
+</html>

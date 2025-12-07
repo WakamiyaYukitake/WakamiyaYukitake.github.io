@@ -1,0 +1,380 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>第4回講義資料 - PE3</title>
+    <link rel="stylesheet" href="../style.css">
+
+    <script type="module" src="https://ajax.googleapis.com/ajax/libs/model-viewer/3.5.0/model-viewer.min.js"></script>
+
+    <style>
+        /* カード内の見出しサイズを少し調整 */
+        .step-card-title {
+            font-size: 1.25em; /* 少し大きく */
+            color: var(--blue);
+            margin-bottom: 10px;
+            display: block; /* マージンを効かせるため */
+        }
+
+        /* リンクボタン用のコンテナ */
+        .button-container {
+            display: flex;
+            flex-wrap: wrap; /* モバイルで折り返し */
+            gap: 16px;
+            margin-top: 24px;
+            margin-bottom: 16px;
+            justify-content: center; /* ボタンを中央揃え */
+        }
+
+        /* --- ここからデザイン強調用の追加CSS --- */
+
+        /* セクションタイトルを目立たせる */
+        h2 {
+            border-bottom: 3px solid;
+            border-image: linear-gradient(90deg, var(--blue), var(--purple)) 1;
+            padding-bottom: 10px;
+            margin-bottom: 32px; /* 余白を増やす */
+            font-size: 2em; /* 大きく */
+            letter-spacing: 1px;
+        }
+
+        /* セクション1 (目標) のリストスタイル */
+        #overview ul {
+            list-style: none;
+            padding-left: 0;
+        }
+        #overview li {
+            background: linear-gradient(135deg, rgba(11,95,255,0.05), rgba(106,76,204,0.05));
+            border: 1px solid rgba(255,255,255,0.05);
+            border-left: 5px solid var(--blue);
+            padding: 20px;
+            margin-bottom: 16px;
+            border-radius: 10px;
+            font-size: 1.1em;
+            box-shadow: 0 8px 24px rgba(2,6,23,0.7);
+            transition: transform 200ms, box-shadow 200ms;
+        }
+        #overview li:hover {
+            transform: translateY(-3px) scale(1.02);
+            box-shadow: 0 12px 30px rgba(2,6,23,0.9);
+        }
+
+        /* セクション2 (流れ) のカードを派手に */
+        .projects-grid .card {
+            transition: transform 300ms, box-shadow 300ms, border-color 300ms;
+            border: 1px solid rgba(255,255,255,0.03);
+            background: linear-gradient(180deg, rgba(255,255,255,0.03), rgba(255,255,255,0.01));
+        }
+        .projects-grid .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 12px 36px rgba(11,95,255,0.1);
+            border-color: rgba(11,95,255,0.3);
+        }
+        .card .small-muted {
+            font-size: 0.95em; /* 少し大きく */
+            line-height: 1.7; /* 行間を調整 */
+            color: var(--muted);
+        }
+
+        /* セクション3 (方向性) のボタンを派手に */
+        .button-container .btn {
+            padding: 12px 24px; /* 大きく */
+            font-size: 1.1em;
+            box-shadow: 0 10px 30px rgba(11,95,255,0.15);
+            transition: transform 200ms, box-shadow 200ms, background 300ms;
+        }
+        .button-container .btn:hover {
+            transform: translateY(-3px) scale(1.03);
+            box-shadow: 0 15px 35px rgba(11,95,255,0.25);
+            background: linear-gradient(90deg, var(--purple), var(--blue));
+        }
+        
+        /* 提出用ボタンの強調スタイル */
+        .btn-submit {
+            background: linear-gradient(90deg, #d53369, #daae51);
+            border: none;
+            color: white;
+            font-weight: bold;
+        }
+        .btn-submit:hover {
+            background: linear-gradient(90deg, #e65c8a, #eac56e);
+            box-shadow: 0 15px 35px rgba(213, 51, 105, 0.4);
+        }
+
+    </style>
+</head>
+<body>
+
+    <header class="site-header">
+        <div class="container">
+            <div class="header-inner">
+                
+                <a href="index.html" class="logo" style="text-decoration: none;">PE3</a>
+                
+                <nav class="site-nav">
+                    
+                    <a href="#overview">目標</a>
+                    <a href="#lecture">手順</a>
+                    <a href="#exercise">詳細・提出</a>
+                    <a href="#inflow">流入設定</a>
+                    <a href="#xml">XML作成</a>
+
+                    <a href="index.html">ホームへもどる</a>
+
+                </nav>
+
+                <button class="menu-btn" aria-label="メニューを開閉">☰</button>
+            </div>
+        </div>
+    </header>
+
+    <main>
+
+        <section class="section section--full" style="padding-top: 80px; padding-bottom: 60px;">
+            <div class="container hero-inner">
+                <h1 class="hero-title">第4回</h1>
+                <p class="hero-lead">
+                    「3Dモデルの作成」と環境構築
+                </p>
+            </div>
+        </section>
+
+        <section id="overview" class="section">
+            <div class="container">
+                <h2>1. 今日の目標</h2>
+                <ul>
+                    <li>3Dモデル（stlファイル）を作成する</li>
+                    <li>パラメータを設定する</li>
+                    <li>解析の動作確認</li>
+                </ul>
+            </div>
+        </section>
+
+        <section id="lecture" class="section">
+            <div class="container">
+                <h2>2. 3Dモデル作成の手順</h2>
+                <p>
+                    オープンデータであるPLATEAUから解析用の3Dモデルを作成する。
+                </p>
+                
+                <h3 style="margin-top: 32px; margin-bottom: 24px; font-size: 1.5em; text-align: center;">プロセス</h3>
+                <p style="text-align: center; max-width: 700px; margin: 0 auto 24px auto; color: var(--muted);">
+                    大まかな流れは以下の通りである。
+                </p>
+
+                <div class="projects-grid" style="grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));">
+                    
+                    <div class="card">
+                        <h3 class="step-card-title">1. 環境構築</h3>
+                        <p class="small-muted">
+                            「Unity」をインストールし、PLATEAUデータを扱うためのアセット「PLATEAU SDK for Unity」を導入する。また、モデル変換用に「Blender」もインストールする。
+                        </p>
+                    </div>
+
+                    <div class="card">
+                        <h3 class="step-card-title">2. データ取得</h3>
+                        <p class="small-muted">
+                            PLATEAUのサイト（G空間情報センター）から、解析対象としたい都市の3D都市モデルデータをダウンロードする。
+                        </p>
+                    </div>
+
+                    <div class="card">
+                        <h3 class="step-card-title">3. 範囲選択</h3>
+                        <p class="small-muted">
+                            UnityでPLATEAUデータを読み込み、SDKの機能を使って解析したい範囲を選択する。目安はグリッド4個分とする。
+                        </p>
+                    </div>
+
+                    <div class="card">
+                        <h3 class="step-card-title">4. OBJ出力</h3>
+                        <p class="small-muted">
+                            Unity上で選択・抽出した範囲のモデルを、汎用的な3D形式であるOBJファイルとしてエクスポートする。
+                        </p>
+                    </div>
+
+                    <div class="card">
+                        <h3 class="step-card-title">5. STL変換</h3>
+                        <p class="small-muted">
+                            BlenderでOBJファイルを読み込み、地形モデル（DEM）と建築物モデルを分離し、それぞれ別々のSTLファイルとして出力する。
+                        </p>
+                    </div>
+                </div>
+                
+            </div>
+        </section>
+
+        <section id="exercise" class="section">
+            <div class="container">
+                <h2>3. 詳細・提出</h2>
+                <p>
+                    作業に必要なソフトウェアおよびデータは以下のリンク先から入手すること。
+                    <br><br>
+                    なお、各ソフトウェアのバージョン選定には注意が必要である。特にUnityとSDKの組み合わせについては以下を厳守すること。
+                </p>
+
+                <div style="background: rgba(255, 179, 0, 0.1); border: 1px solid rgba(255, 179, 0, 0.3); border-left: 4px solid #ffb300; padding: 16px; margin: 24px 0; border-radius: 6px;">
+                    <h5 style="color: #ffb300; font-size: 1.1em; margin-top: 0; margin-bottom: 12px;">推奨環境・バージョン</h5>
+                    <ul style="margin: 0; padding-left: 20px; color: #f0f0f0; line-height: 1.8;">
+                        <li><strong>想定Unityバージョン (動作確認済)</strong> : Unity 2022.3.25f1</li>
+                        <li><strong>推奨範囲</strong> : Unity 2022.3.25f1 以上、Unity 6 未満<br><span style="font-size: 0.9em; color: #ff8080;">※ Unity 6 には未対応であるため使用しないこと。</span></li>
+                        <li><strong>対応 SDK バージョン</strong> : PLATEAU SDK Toolkits for Unity 2.2.1</li>
+                    </ul>
+                </div>
+
+                <h4 style="margin-top: 24px; color: var(--text-light); border-left: 4px solid var(--purple); padding-left: 10px;">ソフトウェア・データ入手先</h4>
+                <div class="button-container">
+                    <a href="https://project-plateau.github.io/PLATEAU-SDK-for-Unity/manual/Installation.html" class="btn" target="_blank" rel="noopener noreferrer" style="border: 1px solid var(--blue);">
+                        インストール手順書
+                    </a>
+                    <a href="https://unity3d.com/jp/get-unity/download" class="btn" target="_blank" rel="noopener noreferrer">
+                        Unity Hub
+                    </a>
+                    <a href="https://unity.com/releases/editor/whats-new/2022.3.25f1" class="btn" target="_blank" rel="noopener noreferrer">
+                        Unity 2022.3.25f1
+                    </a>
+                    <a href="https://github.com/Project-PLATEAU/PLATEAU-SDK-for-Unity/releases" class="btn" target="_blank" rel="noopener noreferrer">
+                        PLATEAU SDK for Unity
+                    </a>
+                    <a href="https://www.blender.org/download/" class="btn" target="_blank" rel="noopener noreferrer">
+                        Blender
+                    </a>
+                    <a href="https://front.geospatial.jp/plateau_portal_site/" class="btn" target="_blank" rel="noopener noreferrer">
+                        PLATEAU
+                    </a>
+                </div>
+
+                <hr style="border: 0; border-top: 1px solid rgba(255,255,255,0.1); margin: 40px 0;">
+
+                <h4 style="color: var(--text-light); border-left: 4px solid #d53369; padding-left: 10px;">stlファイル</h4>
+                <p>
+                    作成したSTLファイル（地形および建物）は、以下のGoogleドライブにアップロードする。
+                </p>
+
+                <div class="button-container">
+                    <a href="https://drive.google.com/drive/folders/1en4Tiv_6PL-heT1hsOikeqobBHoIRwNn?usp=sharing" class="btn btn-submit" target="_blank" rel="noopener noreferrer">
+                        STL提出フォルダ
+                    </a>
+                </div>
+                
+            </div>
+        </section>
+
+        <section id="inflow" class="section">
+            <div class="container">
+                <h2>4. 流入地点の設定</h2>
+                <p>
+                    Blenderを使用して、解析における流入地点（Inflow）の座標とサイズを設定する。<br>
+                    以下の手順に従って操作を行い、設定した数値をメモすること。
+                </p>
+
+                <div class="card" style="margin-top: 30px; border-left: 4px solid var(--blue);">
+                    <h3 class="step-card-title">流入地点の設定手順</h3>
+                    <ol style="line-height: 2; color: var(--text-light); padding-left: 20px;">
+                        <li>
+                            <strong>立方体の作成</strong><br>
+                            「Shift」＋「A」キーを押し、メニューから [メッシュ] ▶ [立方体] を選択する。
+                        </li>
+                        <li>
+                            <strong>オブジェクト原点の移動</strong><br>
+                            オブジェクトの原点を移動させる。<br>
+                            X方向に-1、Y方向に1、Z方向に1移動する。<br>
+                            <span class="small-muted">例：「G」→「X」→「-1」</span>
+                        </li>
+                        <li>
+                            <strong>寸法の入力</strong><br>
+                            「N」キーを押してサイドバーを表示し、「アイテム」タブを開く。「寸法」の項目で流入範囲のサイズを設定する。<br>
+                            <span style="color: #ffb300; font-size: 0.9em;">※ Xの正の方向を流入方向としている。また、Xの値は layersの値×2 とする（例：「layers value="4"」の場合、0.5m間隔で4層できるため、2mの厚さができる）。</span><br>
+                            <span style="color: var(--muted); font-size: 0.9em;">※ 流体粒子は、例えば、「X=1, Y=10.5, Z=2（m）」のとき、「X=3, Y=22, Z=5（個）」となる。</span>
+                        </li>
+                        <li>
+                            <strong>STLファイルの読み込み</strong><br>
+                            作成したSTLファイルを読み込み、位置関係を確認する。
+                        </li>
+                        <li>
+                            <strong>流入地点の配置</strong><br>
+                            同じく「アイテム」タブから、「位置」の値を変更し、流入地点を設定する。<br>
+                            <span style="color: #ff8080; font-size: 0.9em;">※ このオブジェクトが都市モデルに接触しないように余裕を持たせる必要がある（エラーを防ぐため）。</span><br>
+                            <span style="color: #ff8080; font-size: 0.9em;">※ 0.5m単位で設定すること。</span>
+                        </li>
+                    </ol>
+                    <p style="margin-top: 20px; font-weight: bold; color: var(--blue); text-align: center;">
+                        ※この時、設定した寸法及び位置を必ずメモすること。
+                    </p>
+                </div>
+            </div>
+        </section>
+
+        <section id="xml" class="section">
+            <div class="container">
+                <h2>5. XML作成</h2>
+                <p>
+                    解析に必要なパラメータを設定し、XMLファイルを作成する。<br>
+                    以下の「XML作成キット」を使用して、Blenderでメモした数値を入力すること。
+                </p>
+
+                <div class="button-container">
+                    <a href="sample.xml" download class="btn" style="border: 1px solid var(--muted);">
+                        sample.xml をダウンロード
+                    </a>
+                    <a href="xmlkit.html" class="btn" style="background: linear-gradient(90deg, var(--blue), var(--purple)); border: none;">
+                        XML作成キットを開く
+                    </a>
+                </div>
+
+                <hr style="border: 0; border-top: 1px solid rgba(255,255,255,0.1); margin: 40px 0;">
+
+                <h4 style="color: var(--text-light); border-left: 4px solid #d53369; padding-left: 10px;">XMLファイルの提出</h4>
+                <p>
+                    作製したXMLファイルを、以下のGoogleドライブにアップロードする。
+                </p>
+
+                <div class="button-container">
+                    <a href="https://drive.google.com/drive/folders/12d6A8o9S0DrLVItPUcgS-_sqsb9OESpp?usp=sharing" class="btn btn-submit" target="_blank" rel="noopener noreferrer">
+                        XML提出フォルダ
+                    </a>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <footer class="site-footer">
+        <div class="container">
+            <p class="small-muted">&copy; 2025 Wakamiya Yukitake.</p>
+        </div>
+    </footer>
+
+    <script>
+        // フェードインアニメーション
+        document.addEventListener('DOMContentLoaded', () => {
+            const sections = document.querySelectorAll('.section');
+            const observer = new IntersectionObserver((entries) => {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting) {
+                        entry.target.classList.add('in-view');
+                    }
+                });
+            }, { threshold: 0.1 }); 
+
+            sections.forEach(section => {
+                observer.observe(section);
+            });
+            
+            // ヒーローセクションは最初から表示
+            const hero = document.querySelector('.section--full');
+            if(hero) hero.classList.add('in-view');
+
+            // モバイルメニューのトグル
+            const menuBtn = document.querySelector('.menu-btn');
+            const nav = document.querySelector('.site-nav');
+            if (menuBtn && nav) {
+                menuBtn.addEventListener('click', () => {
+                    nav.classList.toggle('open');
+                });
+            }
+        });
+    </script>
+
+</body>
+</html>
