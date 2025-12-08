@@ -51,7 +51,7 @@
             margin-bottom: 12px;
         }
 
-        input[type="text"], input[type="number"] {
+        input[type="text"], input[type="number"], select {
             width: 100%;
             padding: 12px;
             background: rgba(0,0,0,0.3);
@@ -62,7 +62,12 @@
             font-size: 1em;
         }
         
-        input:focus {
+        select option {
+            background: var(--bg-dark);
+            color: white;
+        }
+        
+        input:focus, select:focus {
             outline: none;
             border-color: var(--blue);
         }
@@ -154,13 +159,34 @@
         </div>
 
         <div class="form-group">
-            <label>解析領域 (Simulation Domain Max)</label>
-            <div class="desc">解析する空間の最大座標 (Point Max)。最小座標は(0,0,0)とする。</div>
+            <label>解析領域: 最小座標 (Simulation Domain Min)</label>
+            <div class="desc">解析する空間の最小座標 (Point Min)。通常は(0,0,0)。</div>
+            <div class="row">
+                <div class="col"><input type="number" id="domainMinX" value="0.0" step="0.5" placeholder="X"></div>
+                <div class="col"><input type="number" id="domainMinY" value="0.0" step="0.5" placeholder="Y"></div>
+                <div class="col"><input type="number" id="domainMinZ" value="0.0" step="0.5" placeholder="Z"></div>
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label>解析領域: 最大座標 (Simulation Domain Max)</label>
+            <div class="desc">解析する空間の最大座標 (Point Max)。</div>
             <div class="row">
                 <div class="col"><input type="number" id="domainX" value="900.0" step="0.5" placeholder="X"></div>
                 <div class="col"><input type="number" id="domainY" value="700.0" step="0.5" placeholder="Y"></div>
                 <div class="col"><input type="number" id="domainZ" value="40.0" step="0.5" placeholder="Z"></div>
             </div>
+        </div>
+
+        <div class="form-group" style="border-left: 4px solid #00C9FF;">
+            <label>流入ボックス: 流入方向 (Direction)</label>
+            <div class="desc">流体が流入する方向を選択してください。</div>
+            <select id="inflowDir">
+                <option value="xpos">+X 方向 (1, 0, 0)</option>
+                <option value="xneg">-X 方向 (-1, 0, 0)</option>
+                <option value="ypos">+Y 方向 (0, 1, 0)</option>
+                <option value="yneg">-Y 方向 (0, -1, 0)</option>
+            </select>
         </div>
 
         <div class="form-group" style="border-left: 4px solid #00C9FF;">
@@ -175,9 +201,12 @@
 
         <div class="form-group" style="border-left: 4px solid #00C9FF;">
             <label>流入ボックス: サイズ (Size)</label>
-            <div class="desc">Blenderの「アイテム > 寸法」で確認したサイズを入力。</div>
+            <div class="desc">
+                Blenderの「アイテム > 寸法」で確認したサイズを入力。<br>
+                <span style="color: #ff8080;">※流入方向のサイズは自動的に0になります。</span>
+            </div>
             <div class="row">
-                <div class="col"><input type="number" id="inflowSizeX" value="0" step="0.1" placeholder="X (通常0)"></div>
+                <div class="col"><input type="number" id="inflowSizeX" value="0" step="0.1" placeholder="X"></div>
                 <div class="col"><input type="number" id="inflowSizeY" value="44.5" step="0.5" placeholder="Y"></div>
                 <div class="col"><input type="number" id="inflowSizeZ" value="1.5" step="0.5" placeholder="Z"></div>
             </div>
@@ -222,17 +251,43 @@
         const objNameDem = fileDem.replace('.stl', '');
         const objNameBldg = fileBldg.replace('.stl', '');
 
+        // 最小・最大座標
+        const domMinX = document.getElementById('domainMinX').value;
+        const domMinY = document.getElementById('domainMinY').value;
+        const domMinZ = document.getElementById('domainMinZ').value;
+
         const domX = document.getElementById('domainX').value;
         const domY = document.getElementById('domainY').value;
         const domZ = document.getElementById('domainZ').value;
 
+        // 流入方向の処理
+        const dir = document.getElementById('inflowDir').value;
+        let dirX = 0, dirY = 0, dirZ = 0;
+        
+        // 入力されたサイズ
+        let sizeX = document.getElementById('inflowSizeX').value;
+        let sizeY = document.getElementById('inflowSizeY').value;
+        let sizeZ = document.getElementById('inflowSizeZ').value;
+
+        // 方向に応じてベクトルを設定し、該当方向のサイズを0にする
+        switch(dir) {
+            case 'xpos': // +X
+                dirX = 1; sizeX = 0;
+                break;
+            case 'xneg': // -X
+                dirX = -1; sizeX = 0;
+                break;
+            case 'ypos': // +Y
+                dirY = 1; sizeY = 0;
+                break;
+            case 'yneg': // -Y
+                dirY = -1; sizeY = 0;
+                break;
+        }
+
         const posX = document.getElementById('inflowPosX').value;
         const posY = document.getElementById('inflowPosY').value;
         const posZ = document.getElementById('inflowPosZ').value;
-
-        const sizeX = document.getElementById('inflowSizeX').value;
-        const sizeY = document.getElementById('inflowSizeY').value;
-        const sizeZ = document.getElementById('inflowSizeZ').value;
 
         const vel = document.getElementById('velocity').value;
         const layers = document.getElementById('layers').value;
@@ -266,7 +321,7 @@
         <geometry>
             <definition dp="0.50" units_comment="metres (m)">
                 <pointref x="0" y="0" z="0" />
-                <pointmin x="0.0" y="0.0" z="0.0" />
+                <pointmin x="${domMinX}" y="${domMinY}" z="${domMinZ}" />
                 <pointmax x="${domX}" y="${domY}" z="${domZ}" />
             </definition>
             <commands>
@@ -298,7 +353,7 @@
                         <box>
                             <point x="${posX}" y="${posY}" z="${posZ}" />
                             <size x="${sizeX}" y="${sizeY}" z="${sizeZ}" />
-                            <direction x="1" y="0" z="0" />
+                            <direction x="${dirX}" y="${dirY}" z="${dirZ}" />
                         </box>
                     </zone3d>
                     <imposevelocity mode="0" comment="Imposed velocity 0:fixed value, 1:variable value, 2:Extrapolated value (default=0)">
@@ -348,12 +403,19 @@
         output.value = xmlContent;
         document.getElementById('resultArea').style.display = 'block';
 
-        // ダウンロードリンク作成
+        // ダウンロードファイル名の設定
+        // "Kumamotodem.stl" -> "Kumamoto.xml"
+        // "dem.stl" (大文字小文字区別なし) を除去、なければ ".stl" を除去
+        let baseName = fileDem.replace(/dem\.stl$/i, "");
+        if(baseName === fileDem) {
+            baseName = fileDem.replace(/\.stl$/i, "");
+        }
+        
         const blob = new Blob([xmlContent], { type: 'text/xml' });
         const url = URL.createObjectURL(blob);
         const link = document.getElementById('downloadLink');
         link.href = url;
-        link.download = 'Case_Def.xml';
+        link.download = baseName + '.xml';
     }
 
     function copyToClipboard() {
