@@ -1,0 +1,314 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>第5回講義資料 - PE3</title>
+    <link rel="stylesheet" href="../style.css">
+
+    <script type="module" src="https://ajax.googleapis.com/ajax/libs/model-viewer/3.5.0/model-viewer.min.js"></script>
+
+    <style>
+        /* カード内の見出しサイズを少し調整 */
+        .step-card-title {
+            font-size: 1.25em; /* 少し大きく */
+            color: var(--blue);
+            margin-bottom: 10px;
+            display: block; /* マージンを効かせるため */
+        }
+
+        /* リンクボタン用のコンテナ */
+        .button-container {
+            display: flex;
+            flex-wrap: wrap; /* モバイルで折り返し */
+            gap: 16px;
+            margin-top: 24px;
+            margin-bottom: 16px;
+            justify-content: center; /* ボタンを中央揃え */
+        }
+
+        /* --- ここからデザイン強調用の追加CSS --- */
+
+        /* セクションタイトルを目立たせる */
+        h2 {
+            border-bottom: 3px solid;
+            border-image: linear-gradient(90deg, var(--blue), var(--purple)) 1;
+            padding-bottom: 10px;
+            margin-bottom: 32px; /* 余白を増やす */
+            font-size: 2em; /* 大きく */
+            letter-spacing: 1px;
+        }
+
+        /* セクション1 (目標) のリストスタイル */
+        #overview ul {
+            list-style: none;
+            padding-left: 0;
+        }
+        #overview li {
+            background: linear-gradient(135deg, rgba(11,95,255,0.05), rgba(106,76,204,0.05));
+            border: 1px solid rgba(255,255,255,0.05);
+            border-left: 5px solid var(--blue);
+            padding: 20px;
+            margin-bottom: 16px;
+            border-radius: 10px;
+            font-size: 1.1em;
+            box-shadow: 0 8px 24px rgba(2,6,23,0.7);
+            transition: transform 200ms, box-shadow 200ms;
+        }
+        #overview li:hover {
+            transform: translateY(-3px) scale(1.02);
+            box-shadow: 0 12px 30px rgba(2,6,23,0.9);
+        }
+
+        /* 手順説明用カードのデザイン */
+        .projects-grid .card {
+            transition: transform 300ms, box-shadow 300ms, border-color 300ms;
+            border: 1px solid rgba(255,255,255,0.03);
+            background: linear-gradient(180deg, rgba(255,255,255,0.03), rgba(255,255,255,0.01));
+        }
+        .projects-grid .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 12px 36px rgba(11,95,255,0.1);
+            border-color: rgba(11,95,255,0.3);
+        }
+        .card .small-muted {
+            font-size: 0.95em; /* 少し大きく */
+            line-height: 1.7; /* 行間を調整 */
+            color: var(--muted);
+        }
+
+        /* ボタンのデザイン */
+        .button-container .btn {
+            padding: 12px 24px; /* 大きく */
+            font-size: 1.1em;
+            box-shadow: 0 10px 30px rgba(11,95,255,0.15);
+            transition: transform 200ms, box-shadow 200ms, background 300ms;
+        }
+        .button-container .btn:hover {
+            transform: translateY(-3px) scale(1.03);
+            box-shadow: 0 15px 35px rgba(11,95,255,0.25);
+            background: linear-gradient(90deg, var(--purple), var(--blue));
+        }
+        
+        /* 提出用ボタンの強調スタイル */
+        .btn-submit {
+            background: linear-gradient(90deg, #d53369, #daae51);
+            border: none;
+            color: white;
+            font-weight: bold;
+        }
+        .btn-submit:hover {
+            background: linear-gradient(90deg, #e65c8a, #eac56e);
+            box-shadow: 0 15px 35px rgba(213, 51, 105, 0.4);
+        }
+
+    </style>
+</head>
+<body>
+
+    <header class="site-header">
+        <div class="container">
+            <div class="header-inner">
+                
+                <a href="index.html" class="logo" style="text-decoration: none;">PE3</a>
+                
+                <nav class="site-nav">
+                    
+                    <a href="#overview">目標</a>
+                    <a href="#result">解析結果</a>
+                    <a href="#visualization">可視化</a>
+                    <a href="#submission">修正・提出</a>
+
+                    <a href="index.html">ホームへもどる</a>
+
+                </nav>
+
+                <button class="menu-btn" aria-label="メニューを開閉">☰</button>
+            </div>
+        </div>
+    </header>
+
+    <main>
+
+        <section class="section section--full" style="padding-top: 80px; padding-bottom: 60px;">
+            <div class="container hero-inner">
+                <h1 class="hero-title">第5回</h1>
+                <p class="hero-lead">
+                    シミュレーション結果の可視化
+                </p>
+            </div>
+        </section>
+
+        <section id="overview" class="section">
+            <div class="container">
+                <h2>1. 今日の目標</h2>
+                <ul>
+                    <li>解析の結果を確認する</li>
+                    <li>解析結果を可視化する</li>
+                    <li>必要があればパラメータを修正し、再解析を行う</li>
+                </ul>
+            </div>
+        </section>
+
+        <section id="result" class="section">
+            <div class="container">
+                <h2>2. 解析結果</h2>
+                <p>
+                    前回の設定に基づき実施した各都市の解析結果を配布する。<br>
+                    ファイル容量が非常に大きいため、ギガファイル便を使用して配布を行う。自身の担当する都市のボタンを選択し、データをダウンロードすること。
+                </p>
+                
+                <div class="button-container">
+                    <a href="#" class="btn" target="_blank" rel="noopener noreferrer">
+                        北九州
+                    </a>
+                    <a href="#" class="btn" target="_blank" rel="noopener noreferrer">
+                        波佐見町
+                    </a>
+                    <a href="#" class="btn" target="_blank" rel="noopener noreferrer">
+                        長岡
+                    </a>
+                    <a href="#" class="btn" target="_blank" rel="noopener noreferrer">
+                        広島
+                    </a>
+                </div>
+
+                <hr style="border: 0; border-top: 1px solid rgba(255,255,255,0.1); margin: 40px 0;">
+
+                <h3 style="margin-bottom: 24px; color: var(--text-light); border-left: 4px solid var(--purple); padding-left: 10px;">ログファイルの確認</h3>
+                <p>
+                    ダウンロードしたフォルダ内にある <code>Run.out</code> ファイルをテキストエディタ等で開き、解析が正常に終了しているかを確認する。
+                </p>
+
+                <div class="card" style="margin-top: 20px; border-left: 4px solid #ffb300; background: rgba(255, 179, 0, 0.05);">
+                    <h3 class="step-card-title" style="color: #ffb300;">Run.out の確認ポイント</h3>
+                    <ul style="line-height: 1.8; color: var(--muted); margin-bottom: 0;">
+                        <li><strong>Calculation Time</strong> : 解析にかかった時間が記載されている。</li>
+                        <li><strong>Error / Warning</strong> : エラー等の記述がないか確認する。</li>
+                        <li><strong>Step数</strong> : 設定したステップ数まで計算が進んでいるか確認する。</li>
+                    </ul>
+                </div>
+                
+            </div>
+        </section>
+
+        <section id="visualization" class="section">
+            <div class="container">
+                <h2>3. 結果の可視化</h2>
+                <p>
+                    解析結果として得られたVTKファイルを使用し、ParaViewを用いて流れの可視化を行う。<br>
+                    ParaViewがインストールされていない場合は、以下のリンクよりダウンロードすること。
+                </p>
+
+                <div class="button-container">
+                    <a href="https://www.paraview.org/download/" class="btn" target="_blank" rel="noopener noreferrer" style="border: 1px solid var(--blue);">
+                        ParaView ダウンロード
+                    </a>
+                </div>
+
+                <h3 style="margin-top: 48px; margin-bottom: 24px; font-size: 1.5em; text-align: center;">可視化の手順</h3>
+                <p style="text-align: center; max-width: 700px; margin: 0 auto 24px auto; color: var(--muted);">
+                    基本的な可視化の流れは以下の通りである。
+                </p>
+
+                <div class="projects-grid" style="grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));">
+                    
+                    <div class="card">
+                        <h3 class="step-card-title">1. ファイル読み込み</h3>
+                        <p class="small-muted">
+                            ParaViewを起動し、ダウンロードしたVTKフォルダを選択してデータを読み込む。読み込み時は「Apply」ボタンを押すのを忘れないこと。
+                        </p>
+                    </div>
+
+                    <div class="card">
+                        <h3 class="step-card-title">2. 断面の作成 (Slice)</h3>
+                        <p class="small-muted">
+                            必要に応じて「Slice」フィルタを使用し、特定の位置での断面を表示する。建物の影響を見るためにはZ軸（高さ方向）での調整が重要となる。
+                        </p>
+                    </div>
+
+                    <div class="card">
+                        <h3 class="step-card-title">3. ベクトル表示 (Glyph)</h3>
+                        <p class="small-muted">
+                            風向・風速を矢印で表現するために「Glyph」フィルタを適用する。矢印の密度やサイズを調整し、流れを分かりやすく可視化する。
+                        </p>
+                    </div>
+
+                    <div class="card">
+                        <h3 class="step-card-title">4. カラーマップ調整</h3>
+                        <p class="small-muted">
+                            流速などの変数をカラーマップで表示する。値のレンジ（最小値・最大値）を適切に設定し、結果の分布を明瞭にする。
+                        </p>
+                    </div>
+
+                    <div class="card">
+                        <h3 class="step-card-title">5. 画像・動画保存</h3>
+                        <p class="small-muted">
+                            可視化した結果を画像（Screenshot）またはアニメーションとして保存する。
+                        </p>
+                    </div>
+
+                </div>
+            </div>
+        </section>
+
+        <section id="submission" class="section">
+            <div class="container">
+                <h2>4. 修正・提出</h2>
+                <p>
+                    解析結果が意図したものと異なる場合（例：流入位置がずれている、解析が途中で止まっている等）は、モデルまたはXMLファイルを修正する必要がある。<br>
+                    修正を行った場合は、再度ファイルを以下のGoogleドライブにアップロードすること。
+                </p>
+                <p style="font-size: 0.9em; color: var(--muted);">
+                    ※特に修正の必要がない場合は、可視化した画像を提出準備として保存しておくこと。
+                </p>
+
+                <div class="button-container">
+                    <a href="https://drive.google.com/drive/folders/12d6A8o9S0DrLVItPUcgS-_sqsb9OESpp?usp=sharing" class="btn btn-submit" target="_blank" rel="noopener noreferrer">
+                        修正ファイル提出フォルダ
+                    </a>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <footer class="site-footer">
+        <div class="container">
+            <p class="small-muted">&copy; 2025 Wakamiya Yukitake.</p>
+        </div>
+    </footer>
+
+    <script>
+        // フェードインアニメーション
+        document.addEventListener('DOMContentLoaded', () => {
+            const sections = document.querySelectorAll('.section');
+            const observer = new IntersectionObserver((entries) => {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting) {
+                        entry.target.classList.add('in-view');
+                    }
+                });
+            }, { threshold: 0.1 }); 
+
+            sections.forEach(section => {
+                observer.observe(section);
+            });
+            
+            // ヒーローセクションは最初から表示
+            const hero = document.querySelector('.section--full');
+            if(hero) hero.classList.add('in-view');
+
+            // モバイルメニューのトグル
+            const menuBtn = document.querySelector('.menu-btn');
+            const nav = document.querySelector('.site-nav');
+            if (menuBtn && nav) {
+                menuBtn.addEventListener('click', () => {
+                    nav.classList.toggle('open');
+                });
+            }
+        });
+    </script>
+
+</body>
+</html>
