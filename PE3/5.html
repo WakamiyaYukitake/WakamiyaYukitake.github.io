@@ -154,22 +154,22 @@
             <div class="container">
                 <h2>2. 解析結果</h2>
                 <p>
-                    前回の設定に基づき実施した各都市の解析結果を配布する。<br>
-                    ファイル容量が非常に大きいため、ギガファイル便を使用して配布を行う。自身の担当する都市のボタンを選択し、データをダウンロードすること。
+                    前回のモデル及びパラメータに基づき実施した各都市の解析結果データをダウンロードする。<br>
+                    ファイル容量が非常に大きいため、ギガファイル便を使用する。
                 </p>
                 
                 <div class="button-container">
-                    <a href="#" class="btn" target="_blank" rel="noopener noreferrer">
-                        北九州
+                    <a href="https://xgf.nu/Hv1mC" class="btn" target="_blank" rel="noopener noreferrer">
+                        北九州市
                     </a>
-                    <a href="#" class="btn" target="_blank" rel="noopener noreferrer">
+                    <a href="https://xgf.nu/P5RD8" class="btn" target="_blank" rel="noopener noreferrer">
                         波佐見町
                     </a>
-                    <a href="#" class="btn" target="_blank" rel="noopener noreferrer">
-                        長岡
+                    <a href="https://xgf.nu/YhS8J" class="btn" target="_blank" rel="noopener noreferrer">
+                        長岡市
                     </a>
-                    <a href="#" class="btn" target="_blank" rel="noopener noreferrer">
-                        広島
+                    <a href="https://xgf.nu/305m8" class="btn" target="_blank" rel="noopener noreferrer">
+                        広島市
                     </a>
                 </div>
 
@@ -177,15 +177,16 @@
 
                 <h3 style="margin-bottom: 24px; color: var(--text-light); border-left: 4px solid var(--purple); padding-left: 10px;">ログファイルの確認</h3>
                 <p>
-                    ダウンロードしたフォルダ内にある <code>Run.out</code> ファイルをテキストエディタ等で開き、解析が正常に終了しているかを確認する。
+                    ダウンロードしたフォルダ内にある <code>Run.out</code> ファイルをテキストエディタ等で開き、解析ログを確認する。
                 </p>
 
                 <div class="card" style="margin-top: 20px; border-left: 4px solid #ffb300; background: rgba(255, 179, 0, 0.05);">
                     <h3 class="step-card-title" style="color: #ffb300;">Run.out の確認ポイント</h3>
                     <ul style="line-height: 1.8; color: var(--muted); margin-bottom: 0;">
-                        <li><strong>Calculation Time</strong> : 解析にかかった時間が記載されている。</li>
-                        <li><strong>Error / Warning</strong> : エラー等の記述がないか確認する。</li>
-                        <li><strong>Step数</strong> : 設定したステップ数まで計算が進んでいるか確認する。</li>
+                        <li><strong>Particles new</strong> : そのステップ時に流入した流体粒子の個数</li>
+                        <li><strong>Particles out</strong> : そのステップ時に解析範囲外に出てしまった流体粒子の個数</li>
+                        <li><strong>Particles of simulation (initial)</strong> : 地面や建物を表現する境界粒子の個数</li>
+                        <li><strong>Total Runtime</strong> : 解析にかかった時間(s)</li>
                     </ul>
                 </div>
                 
@@ -196,7 +197,7 @@
             <div class="container">
                 <h2>3. 結果の可視化</h2>
                 <p>
-                    解析結果として得られたVTKファイルを使用し、ParaViewを用いて流れの可視化を行う。<br>
+                    解析結果として得られたVTKファイルを、ParaViewを用いて可視化する。<br>
                     ParaViewがインストールされていない場合は、以下のリンクよりダウンロードすること。
                 </p>
 
@@ -214,37 +215,44 @@
                 <div class="projects-grid" style="grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));">
                     
                     <div class="card">
-                        <h3 class="step-card-title">1. ファイル読み込み</h3>
+                        <h3 class="step-card-title">0. ZIPファイルを展開</h3>
                         <p class="small-muted">
-                            ParaViewを起動し、ダウンロードしたVTKフォルダを選択してデータを読み込む。読み込み時は「Apply」ボタンを押すのを忘れないこと。
+                            "都市名"_particles.zip及び"都市名"_computeforces.zipを展開する。
+                        </p>
+                    </div>
+                    
+                    <div class="card">
+                        <h3 class="step-card-title">1. モデルの読み込み</h3>
+                        <p class="small-muted">
+                            ParaViewを起動し、"都市名"bleg.stl及び"都市名"dem.stlをそれぞれドラッグアンドドロップして読み込む。左上の「Popeline Browser」タブに表示されたファイル名の左にある目を開き表示する。
                         </p>
                     </div>
 
                     <div class="card">
-                        <h3 class="step-card-title">2. 断面の作成 (Slice)</h3>
+                        <h3 class="step-card-title">2. 流体粒子の読み込み</h3>
                         <p class="small-muted">
-                            必要に応じて「Slice」フィルタを使用し、特定の位置での断面を表示する。建物の影響を見るためにはZ軸（高さ方向）での調整が重要となる。
+                            "都市名"_particlesファイル内の「PartFluid_0000.vtk」から「PartFluid_0060.vtk」を選択し、「PartFluid_0000.vtk」をクリックしながら、ドラッグアンドドロップする。モデルと同様に目を開き表示する。（"都市名"_computeforcesの建物に与える力も同様に可視化可能）
                         </p>
                     </div>
 
                     <div class="card">
-                        <h3 class="step-card-title">3. ベクトル表示 (Glyph)</h3>
+                        <h3 class="step-card-title">3. 再生</h3>
                         <p class="small-muted">
-                            風向・風速を矢印で表現するために「Glyph」フィルタを適用する。矢印の密度やサイズを調整し、流れを分かりやすく可視化する。
+                            上部の再生ボタンをクリックして、動画を再生する。「Time」がステップ数を示す。
                         </p>
                     </div>
 
                     <div class="card">
-                        <h3 class="step-card-title">4. カラーマップ調整</h3>
+                        <h3 class="step-card-title">4. カラー調整</h3>
                         <p class="small-muted">
-                            流速などの変数をカラーマップで表示する。値のレンジ（最小値・最大値）を適切に設定し、結果の分布を明瞭にする。
+                            左下の「Properties」の「Coloring」でIdpをVelとすることで流速をカラーリングする。（Idp：粒子番号、Rhop：密度、Type：識別子、Vel：速度）上部の「View」タブから「Color Map Editor」をクリックして表示し、色合いを調整する。
                         </p>
                     </div>
 
                     <div class="card">
                         <h3 class="step-card-title">5. 画像・動画保存</h3>
                         <p class="small-muted">
-                            可視化した結果を画像（Screenshot）またはアニメーションとして保存する。
+                            中央の表示レイアウト上部のカメラマークで画像を保存できる。上部の「Flie」から「Save Animation...」から動画を保存できる。
                         </p>
                     </div>
 
@@ -256,16 +264,18 @@
             <div class="container">
                 <h2>4. 修正・提出</h2>
                 <p>
-                    解析結果が意図したものと異なる場合（例：流入位置がずれている、解析が途中で止まっている等）は、モデルまたはXMLファイルを修正する必要がある。<br>
-                    修正を行った場合は、再度ファイルを以下のGoogleドライブにアップロードすること。
-                </p>
-                <p style="font-size: 0.9em; color: var(--muted);">
-                    ※特に修正の必要がない場合は、可視化した画像を提出準備として保存しておくこと。
+                    解析結果が意図したものと異なる場合（例：多くの粒子が解析範囲外に流出している等）は、モデルまたはXMLファイルを修正する必要がある。<br>
+                    修正を行う場合、再度ファイルを以下のGoogleドライブにアップロードすること。
                 </p>
 
                 <div class="button-container">
+                    <a href="https://drive.google.com/drive/folders/1en4Tiv_6PL-heT1hsOikeqobBHoIRwNn?usp=sharing" class="btn btn-submit" target="_blank" rel="noopener noreferrer">
+                        STL提出フォルダ
+                    </a>
+                </div>
+                <div class="button-container">
                     <a href="https://drive.google.com/drive/folders/12d6A8o9S0DrLVItPUcgS-_sqsb9OESpp?usp=sharing" class="btn btn-submit" target="_blank" rel="noopener noreferrer">
-                        修正ファイル提出フォルダ
+                        XML提出フォルダ
                     </a>
                 </div>
             </div>
