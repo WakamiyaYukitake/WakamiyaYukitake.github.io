@@ -1,0 +1,327 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>解析結果 - PE3</title>
+    <link rel="stylesheet" href="../style.css">
+
+    <script type="module" src="https://ajax.googleapis.com/ajax/libs/model-viewer/3.5.0/model-viewer.min.js"></script>
+
+    <style>
+        /* --- 基本設定（既存） --- */
+        .step-card-title {
+            font-size: 1.25em;
+            color: var(--blue);
+            margin-bottom: 10px;
+            display: block;
+        }
+
+        .button-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 16px;
+            margin-top: 24px;
+            margin-bottom: 16px;
+            justify-content: center;
+        }
+
+        h2 {
+            border-bottom: 3px solid;
+            border-image: linear-gradient(90deg, var(--blue), var(--purple)) 1;
+            padding-bottom: 10px;
+            margin-bottom: 32px;
+            font-size: 2em;
+            letter-spacing: 1px;
+        }
+
+        /* --- リスト・カードデザイン（既存） --- */
+        #overview ul {
+            list-style: none;
+            padding-left: 0;
+        }
+        #overview li {
+            background: linear-gradient(135deg, rgba(11,95,255,0.05), rgba(106,76,204,0.05));
+            border: 1px solid rgba(255,255,255,0.05);
+            border-left: 5px solid var(--blue);
+            padding: 20px;
+            margin-bottom: 16px;
+            border-radius: 10px;
+            font-size: 1.1em;
+            box-shadow: 0 8px 24px rgba(2,6,23,0.7);
+            transition: transform 200ms, box-shadow 200ms;
+        }
+        #overview li:hover {
+            transform: translateY(-3px) scale(1.02);
+            box-shadow: 0 12px 30px rgba(2,6,23,0.9);
+        }
+
+        .projects-grid .card {
+            transition: transform 300ms, box-shadow 300ms, border-color 300ms;
+            border: 1px solid rgba(255,255,255,0.03);
+            background: linear-gradient(180deg, rgba(255,255,255,0.03), rgba(255,255,255,0.01));
+        }
+        .projects-grid .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 12px 36px rgba(11,95,255,0.1);
+            border-color: rgba(11,95,255,0.3);
+        }
+        .card .small-muted {
+            font-size: 0.95em;
+            line-height: 1.7;
+            color: var(--muted);
+        }
+
+        /* --- ボタンデザイン --- */
+        .btn {
+            display: inline-block; /* リンクでもボタンスタイルを適用するため追加 */
+            text-decoration: none; /* 下線を消す */
+            color: white; /* テキスト色 */
+            background: var(--blue); /* デフォルト色（変数がない場合は適宜色コードへ） */
+            /* 変数がCSSファイルにある前提ですが、念のためフォールバック色を指定 */
+            background-color: #0b5fff; 
+            border-radius: 8px; /* 角丸 */
+            padding: 12px 24px;
+            font-size: 1em; /* 少し調整 */
+            box-shadow: 0 10px 30px rgba(11,95,255,0.15);
+            transition: transform 200ms, box-shadow 200ms, background 300ms;
+            text-align: center;
+        }
+        .btn:hover {
+            transform: translateY(-3px) scale(1.03);
+            box-shadow: 0 15px 35px rgba(11,95,255,0.25);
+            background: linear-gradient(90deg, var(--purple), var(--blue));
+        }
+        
+        /* 提出用ボタン */
+        .btn-submit {
+            background: linear-gradient(90deg, #d53369, #daae51);
+            border: none;
+            color: white;
+            font-weight: bold;
+        }
+        .btn-submit:hover {
+            background: linear-gradient(90deg, #e65c8a, #eac56e);
+            box-shadow: 0 15px 35px rgba(213, 51, 105, 0.4);
+        }
+
+        /* --- 今回追加：解析結果ダウンロード用の新スタイル --- */
+        
+        /* 都市ごとのカードグリッド */
+        .city-results-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 24px;
+            margin-top: 32px;
+        }
+
+        /* 都市カード */
+        .city-card {
+            background: rgba(255, 255, 255, 0.02);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            padding: 24px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .city-name {
+            font-size: 1.4em;
+            font-weight: bold;
+            margin-bottom: 20px;
+            color: #fff;
+            border-bottom: 2px solid var(--blue);
+            padding-bottom: 8px;
+            width: 100%;
+            text-align: center;
+        }
+
+        /* 縦並びボタン群 */
+        .city-btn-group {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            width: 100%;
+        }
+
+        /* ボタンの種類ごとの微調整 */
+        .btn-download {
+            width: 100%; /* カード幅いっぱいに */
+            box-sizing: border-box;
+            font-size: 0.95em;
+            padding: 10px 16px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        /* アイコン的な矢印 */
+        .btn-download::after {
+            content: "↓";
+            font-weight: bold;
+            margin-left: 10px;
+        }
+
+        /* 未解析（グレーアウト）ボタンスタイル */
+        .btn.disabled {
+            background: #444 !important; /* 暗いグレー */
+            color: #888 !important;
+            cursor: not-allowed;
+            pointer-events: none; /* クリック無効化 */
+            box-shadow: none !important;
+            transform: none !important;
+            border: 1px solid #555;
+        }
+
+    </style>
+</head>
+<body>
+
+    <header class="site-header">
+        <div class="container">
+            <div class="header-inner">
+                
+                <a href="index.html" class="logo" style="text-decoration: none;">PE3</a>
+                
+                <nav class="site-nav">
+                    <a href="#result">解析結果一覧</a>
+                    <a href="index.html">ホームへもどる</a>
+                </nav>
+
+                <button class="menu-btn" aria-label="メニューを開閉">☰</button>
+            </div>
+        </div>
+    </header>
+
+    <main>
+
+        <section class="section section--full" style="padding-top: 80px; padding-bottom: 60px;">
+            <div class="container hero-inner">
+                <h1 class="hero-title">解析結果一覧</h1>
+            </div>
+        </section>
+
+        <section id="result" class="section">
+            <div class="container">
+                <h2>解析結果一覧</h2>
+                <p>
+                    ファイル容量が非常に大きいため、ギガファイル便を使用している。<br>
+                    <span style="font-size: 0.9em; color: var(--muted);">※ボタンがグレーになっているデータは現在解析中または未解析のためダウンロード不可。</span>
+                </p>
+                
+                <div class="city-results-grid">
+
+                    <div class="city-card">
+                        <div class="city-name">北九州市</div>
+                        <div class="city-btn-group">
+                            <a href="#" class="btn btn-download disabled" target="_blank" rel="noopener noreferrer">
+                                流速・結果ログ
+                            </a>
+                            <a href="#" class="btn btn-download disabled" target="_blank" rel="noopener noreferrer">
+                                浸水深
+                            </a>
+                            <a href="#" class="btn btn-download disabled" target="_blank" rel="noopener noreferrer">
+                                流体力
+                            </a>
+                        </div>
+                    </div>
+
+                    <div class="city-card">
+                        <div class="city-name">波佐見町</div>
+                        <div class="city-btn-group">
+                            <a href="#" class="btn btn-download disabled" target="_blank" rel="noopener noreferrer">
+                                流速・結果ログ
+                            </a>
+                            <a href="#" class="btn btn-download disabled" target="_blank" rel="noopener noreferrer">
+                                浸水深
+                            </a>
+                            <a href="#" class="btn btn-download disabled" target="_blank" rel="noopener noreferrer">
+                                流体力
+                            </a>
+                        </div>
+                    </div>
+
+                    <div class="city-card">
+                        <div class="city-name">長岡市</div>
+                        <div class="city-btn-group">
+                            <a href="https://xgf.nu/YhS8J" class="btn btn-download" target="_blank" rel="noopener noreferrer">
+                                流速・結果ログ・流体力
+                            </a>
+                            <a href="#" class="btn btn-download disabled" target="_blank" rel="noopener noreferrer">
+                                浸水深
+                            </a>
+                        </div>
+                    </div>
+
+                    <div class="city-card">
+                        <div class="city-name">広島市</div>
+                        <div class="city-btn-group">
+                            <a href="https://xgf.nu/305m8" class="btn btn-download" target="_blank" rel="noopener noreferrer">
+                                流速・結果ログ・流体力
+                            </a>
+                            <a href="#" class="btn btn-download disabled" target="_blank" rel="noopener noreferrer">
+                                浸水深
+                            </a>
+                        </div>
+                    </div>
+
+                    <div class="city-card">
+                        <div class="city-name">久留米市</div>
+                        <div class="city-btn-group">
+                            <a href="https://xgf.nu/jFBAS" class="btn btn-download" target="_blank" rel="noopener noreferrer">
+                                流速・結果ログ
+                            </a>
+                            <a href="#" class="btn btn-download disabled" target="_blank" rel="noopener noreferrer">
+                                浸水深
+                            </a>
+                            <a href="#" class="btn btn-download disabled" target="_blank" rel="noopener noreferrer">
+                                流体力
+                            </a>
+                        </div>
+                    </div>
+
+                </div>
+                <hr style="border: 0; border-top: 1px solid rgba(255,255,255,0.1); margin: 40px 0;">
+
+    </main>
+
+    <footer class="site-footer">
+        <div class="container">
+            <p class="small-muted">&copy; 2025 Wakamiya Yukitake.</p>
+        </div>
+    </footer>
+
+    <script>
+        // フェードインアニメーション
+        document.addEventListener('DOMContentLoaded', () => {
+            const sections = document.querySelectorAll('.section');
+            const observer = new IntersectionObserver((entries) => {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting) {
+                        entry.target.classList.add('in-view');
+                    }
+                });
+            }, { threshold: 0.1 }); 
+
+            sections.forEach(section => {
+                observer.observe(section);
+            });
+            
+            // ヒーローセクションは最初から表示
+            const hero = document.querySelector('.section--full');
+            if(hero) hero.classList.add('in-view');
+
+            // モバイルメニューのトグル
+            const menuBtn = document.querySelector('.menu-btn');
+            const nav = document.querySelector('.site-nav');
+            if (menuBtn && nav) {
+                menuBtn.addEventListener('click', () => {
+                    nav.classList.toggle('open');
+                });
+            }
+        });
+    </script>
+
+</body>
+</html>
