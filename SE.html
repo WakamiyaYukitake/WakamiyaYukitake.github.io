@@ -1,0 +1,272 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>総合演習　ー発表資料ー</title>
+  <meta name="description" content="総合演習発表資料">
+  
+  <style>
+    /* Design Configuration */
+    :root{
+      --blue: #0b5fff;
+      --purple: #6a4cff;
+      --green: #00b894;
+      --bg: #0f1720;
+      --surface: #0f1720;
+      --muted: #98a1b3;
+      --max-width: 1100px;
+      --radius: 12px;
+    }
+
+    *{box-sizing:border-box}
+    html{scroll-behavior:smooth}
+    body{
+      margin:0;
+      min-height:100vh;
+      font-family:"Segoe UI","Roboto","Helvetica Neue","Noto Sans JP","Hiragino Kaku Gothic ProN","Yu Gothic","Meiryo",sans-serif;
+      color:#e6eef8;
+      background:linear-gradient(180deg, rgba(8,10,22,1) 0%, rgba(10,12,26,1) 100%);
+      -webkit-font-smoothing:antialiased;
+      -moz-osx-font-smoothing:grayscale;
+      line-height:1.6;
+    }
+
+    /* Background Animation */
+    body::before{
+      content:'';
+      position:fixed;
+      inset:0;
+      z-index:-1;
+      background: linear-gradient(120deg, var(--blue), var(--purple), var(--green));
+      opacity:0.06;
+      filter:blur(40px);
+      animation: flow 18s linear infinite;
+      transform: scale(1.2);
+    }
+    @keyframes flow{
+      0%{transform:translateX(-10%) scale(1.15)}
+      50%{transform:translateX(10%) scale(1.25)}
+      100%{transform:translateX(-10%) scale(1.15)}
+    }
+
+    /* Container */
+    .container{
+      max-width:var(--max-width);
+      margin:0 auto;
+      padding:24px;
+    }
+
+    /* Header */
+    .site-header{
+      position:sticky;
+      top:0;
+      backdrop-filter: blur(6px);
+      background:linear-gradient(180deg, rgba(6,8,16,0.55), rgba(6,8,16,0.35));
+      border-bottom:1px solid rgba(255,255,255,0.03);
+      z-index:50;
+    }
+    .header-inner{
+      display:flex;
+      align-items:center;
+      padding:12px 8px;
+    }
+    .logo{
+      font-weight:700;
+      letter-spacing:0.6px;
+      font-size:18px;
+      color:var(--blue);
+    }
+
+    /* Hero / Title Section */
+    .section--full{ padding:80px 0 40px 0 }
+    .hero-inner{ text-align:center; padding:40px 20px; border-radius:var(--radius); }
+    .hero-title{
+      font-size:32px;
+      margin:0 0 12px 0;
+      color: #fff;
+      letter-spacing:0.2px;
+    }
+    .hero-lead{ color:var(--muted); max-width:780px; margin:0 auto 20px auto; }
+    
+    /* Animation Blocks */
+    .section{
+      padding:20px 0 80px 0;
+      opacity:0;
+      transform:translateY(18px);
+      transition:opacity 700ms cubic-bezier(.2,.9,.2,1), transform 700ms cubic-bezier(.2,.9,.2,1);
+    }
+    .section.in-view{ opacity:1; transform:none }
+
+    /* --- Video Grid Settings (Fixed to 2 Columns) --- */
+    .projects-grid{
+      display:grid;
+      /* PC・スマホ問わず常に2列にする設定 */
+      grid-template-columns: repeat(2, 1fr); 
+      gap: 24px;
+      margin-top:18px;
+    }
+
+    /* Card Design */
+    .card{
+      background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));
+      border:1px solid rgba(255,255,255,0.03);
+      padding:14px;
+      border-radius:12px;
+      box-shadow:0 6px 18px rgba(2,6,23,0.6);
+      transition: transform 0.3s ease;
+    }
+    
+    .card h3 {
+        margin: 14px 0 4px 0;
+        font-size: 16px;
+        color: #fff;
+        font-weight: 600;
+    }
+
+    /* Video Wrapper */
+    .video-wrapper{ 
+        width:100%; 
+        position:relative; 
+        padding-bottom:56.25%; 
+        height:0; 
+        overflow:hidden; 
+        border-radius:10px; 
+        box-shadow:0 12px 36px rgba(2,6,23,0.6); 
+        background: #000; 
+    }
+    .video-wrapper iframe{ 
+        position:absolute; 
+        inset:0; 
+        width:100%; 
+        height:100%; 
+        border:0; 
+    }
+
+    /* Mobile Adjustments (Optimize space for 2 columns) */
+    @media (max-width: 600px) {
+      .container { padding: 16px; } /* Reduce container padding */
+      .projects-grid { gap: 10px; } /* Reduce grid gap */
+      .card { padding: 10px; }      /* Reduce card padding */
+      .card h3 { font-size: 13px; margin-top: 10px; } /* Smaller font */
+      .hero-title { font-size: 24px; }
+    }
+
+    /* Footer */
+    .site-footer{ padding:18px 0; border-top:1px solid rgba(255,255,255,0.02); margin-top:40px; text-align:center; color:var(--muted); font-size:13px; }
+
+  </style>
+</head>
+<body>
+
+  <header class="site-header" role="banner">
+    <div class="container header-inner">
+      <div class="logo">WY</div>
+    </div>
+  </header>
+
+  <main id="main" role="main">
+    
+    <section id="home" class="section hero section--full in-view">
+      <div class="container hero-inner">
+        <h1 class="hero-title">総合演習　ー発表資料ー</h1>
+        <p class="hero-lead">PLATEAUを用いた粒子法による河川氾濫解析</p>
+      </div>
+    </section>
+
+    <section id="media" class="section in-view">
+      <div class="container">
+        <div class="projects-grid">
+          
+          <article class="card">
+            <div class="video-wrapper">
+              <iframe src="https://www.youtube.com/embed/w5v-t_sqE6g?autoplay=1&mute=1&loop=1&playlist=w5v-t_sqE6g&controls=0&rel=0" 
+                      title="車両の漂流過程" 
+                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
+                      allowfullscreen></iframe>
+            </div>
+            <h3>車両の漂流過程</h3>
+          </article>
+
+          <article class="card">
+            <div class="video-wrapper">
+              <iframe src="https://www.youtube.com/embed/-xxgohdGp4s?autoplay=1&mute=1&loop=1&playlist=-xxgohdGp4s&controls=0&rel=0" 
+                      title="車両の漂流過程log" 
+                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
+                      allowfullscreen></iframe>
+            </div>
+            <h3>車両の漂流過程log</h3>
+          </article>
+
+          <article class="card">
+            <div class="video-wrapper">
+              <iframe src="https://www.youtube.com/embed/r5yEwHzArg0?autoplay=1&mute=1&loop=1&playlist=r5yEwHzArg0&controls=0&rel=0" 
+                      title="建物が受ける流体力" 
+                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
+                      allowfullscreen></iframe>
+            </div>
+            <h3>建物が受ける流体力</h3>
+          </article>
+
+          <article class="card">
+            <div class="video-wrapper">
+              <iframe src="https://www.youtube.com/embed/iVh_fqKWRh0?autoplay=1&mute=1&loop=1&playlist=iVh_fqKWRh0&controls=0&rel=0" 
+                      title="建物が受ける最大流体力" 
+                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
+                      allowfullscreen></iframe>
+            </div>
+            <h3>建物が受ける最大流体力</h3>
+          </article>
+
+          <article class="card">
+            <div class="video-wrapper">
+              <iframe src="https://www.youtube.com/embed/zvXhwo2hOvo?autoplay=1&mute=1&loop=1&playlist=zvXhwo2hOvo&controls=0&rel=0" 
+                      title="瞬間被害リスク評価" 
+                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
+                      allowfullscreen></iframe>
+            </div>
+            <h3>瞬間被害リスク評価</h3>
+          </article>
+
+          <article class="card">
+            <div class="video-wrapper">
+              <iframe src="https://www.youtube.com/embed/FX7Og65_7zo?autoplay=1&mute=1&loop=1&playlist=FX7Og65_7zo&controls=0&rel=0" 
+                      title="累計被害リスク評価" 
+                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
+                      allowfullscreen></iframe>
+            </div>
+            <h3>累計被害リスク評価</h3>
+          </article>
+
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <footer class="site-footer" role="contentinfo">
+    <div class="container">© <span id="year"></span> Wakamiya Yukitake.</div>
+  </footer>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', function(){
+      const sections = Array.from(document.querySelectorAll('.section'));
+      const yearEl = document.getElementById('year');
+
+      // Set year
+      if(yearEl) yearEl.textContent = new Date().getFullYear();
+
+      // Fade-in Observer
+      const io = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+          if(entry.isIntersecting){
+            entry.target.classList.add('in-view');
+          }
+        });
+      }, { threshold: 0.15 });
+
+      sections.forEach(s => io.observe(s));
+    });
+  </script>
+</body>
+</html>
