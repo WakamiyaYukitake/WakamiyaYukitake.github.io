@@ -15,7 +15,6 @@
       --bg: #0f1720;
       --surface: #0f1720;
       --muted: #98a1b3;
-      --max-width: 1100px;
       --radius: 12px;
     }
 
@@ -50,11 +49,11 @@
       100%{transform:translateX(-10%) scale(1.15)}
     }
 
-    /* Container */
+    /* Container (画面ギリギリまで広げる) */
     .container{
-      max-width:var(--max-width);
+      max-width: 98%; 
       margin:0 auto;
-      padding:24px;
+      padding: 10px;
     }
 
     /* Header */
@@ -69,7 +68,7 @@
     .header-inner{
       display:flex;
       align-items:center;
-      padding:12px 8px;
+      padding:12px 10px;
     }
     .logo{
       font-weight:700;
@@ -79,49 +78,59 @@
     }
 
     /* Hero / Title Section */
-    .section--full{ padding:80px 0 40px 0 }
-    .hero-inner{ text-align:center; padding:40px 20px; border-radius:var(--radius); }
+    .section--full{ padding: 60px 0 20px 0; }
+    .hero-inner{ text-align:center; padding: 20px 10px; border-radius:var(--radius); }
     .hero-title{
-      font-size:32px;
+      font-size: 32px;
       margin:0 0 12px 0;
       color: #fff;
       letter-spacing:0.2px;
     }
-    .hero-lead{ color:var(--muted); max-width:780px; margin:0 auto 20px auto; }
+    .hero-lead{ color:var(--muted); max-width:780px; margin:0 auto; }
     
     /* Animation Blocks */
     .section{
-      padding:20px 0 80px 0;
+      padding: 20px 0 40px 0;
       opacity:0;
       transform:translateY(18px);
       transition:opacity 700ms cubic-bezier(.2,.9,.2,1), transform 700ms cubic-bezier(.2,.9,.2,1);
     }
     .section.in-view{ opacity:1; transform:none }
 
+    /* Category Title (間隔を調整) */
+    .category-title {
+      font-size: 22px;
+      margin: 100px 0 16px 0; /* 上の余白を40pxから100pxに拡大し、ジャンル間をしっかり開ける */
+      padding-left: 10px;
+      border-left: 4px solid var(--blue);
+      color: #fff;
+    }
+    /* 最初のタイトルだけは上の余白を狭くする */
+    .category-title:first-of-type {
+      margin-top: 20px; 
+    }
+
     /* --- Video Grid Settings (Fixed to 2 Columns) --- */
     .projects-grid{
       display:grid;
-      /* PC・スマホ問わず常に2列にする設定 */
       grid-template-columns: repeat(2, 1fr); 
-      gap: 24px;
-      margin-top:18px;
+      gap: 16px; 
     }
 
     /* Card Design */
     .card{
-      background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));
-      border:1px solid rgba(255,255,255,0.03);
-      padding:14px;
-      border-radius:12px;
-      box-shadow:0 6px 18px rgba(2,6,23,0.6);
+      background: transparent;
+      border: none;
+      padding: 0;
       transition: transform 0.3s ease;
     }
     
     .card h3 {
-        margin: 14px 0 4px 0;
+        margin: 8px 0 0 0;
         font-size: 16px;
         color: #fff;
         font-weight: 600;
+        text-align: center;
     }
 
     /* Video Wrapper */
@@ -131,8 +140,8 @@
         padding-bottom:56.25%; 
         height:0; 
         overflow:hidden; 
-        border-radius:10px; 
-        box-shadow:0 12px 36px rgba(2,6,23,0.6); 
+        border-radius:8px; 
+        box-shadow:0 8px 24px rgba(0,0,0,0.8); 
         background: #000; 
     }
     .video-wrapper iframe{ 
@@ -143,13 +152,14 @@
         border:0; 
     }
 
-    /* Mobile Adjustments (Optimize space for 2 columns) */
+    /* Mobile Adjustments */
     @media (max-width: 600px) {
-      .container { padding: 16px; } /* Reduce container padding */
-      .projects-grid { gap: 10px; } /* Reduce grid gap */
-      .card { padding: 10px; }      /* Reduce card padding */
-      .card h3 { font-size: 13px; margin-top: 10px; } /* Smaller font */
+      .container { padding: 6px; } 
+      .projects-grid { gap: 8px; } 
+      .card h3 { font-size: 13px; margin-top: 6px; } 
       .hero-title { font-size: 24px; }
+      .category-title { font-size: 18px; margin: 60px 0 12px 0; } /* スマホ時も余白を拡大 */
+      .category-title:first-of-type { margin-top: 10px; }
     }
 
     /* Footer */
@@ -169,13 +179,15 @@
     
     <section id="home" class="section hero section--full in-view">
       <div class="container hero-inner">
-        <h1 class="hero-title">総合演習　ー発表資料ー</h1>
-        <p class="hero-lead">PLATEAUを用いた粒子法による河川氾濫解析</p>
+        <h1 class="hero-title">PLATEAUを用いた粒子法による河川氾濫解析</h1>
+        <p class="hero-lead">解析動画</p>
       </div>
     </section>
 
     <section id="media" class="section in-view">
       <div class="container">
+        
+        <h2 class="category-title">車両の漂流過程</h2>
         <div class="projects-grid">
           
           <article class="card">
@@ -198,10 +210,15 @@
             <h3>車両の漂流過程log</h3>
           </article>
 
+        </div>
+
+        <h2 class="category-title">粒子間距離0.2mにおける流体力とリスク評価</h2>
+        <div class="projects-grid">
+          
           <article class="card">
             <div class="video-wrapper">
               <iframe src="https://www.youtube.com/embed/r5yEwHzArg0?autoplay=1&mute=1&loop=1&playlist=r5yEwHzArg0&controls=0&rel=0" 
-                      title="建物が受ける流体力" 
+                      title="建物が受ける流体力 (dp=0.2m)" 
                       allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
                       allowfullscreen></iframe>
             </div>
@@ -211,7 +228,7 @@
           <article class="card">
             <div class="video-wrapper">
               <iframe src="https://www.youtube.com/embed/iVh_fqKWRh0?autoplay=1&mute=1&loop=1&playlist=iVh_fqKWRh0&controls=0&rel=0" 
-                      title="建物が受ける最大流体力" 
+                      title="建物が受ける最大流体力 (dp=0.2m)" 
                       allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
                       allowfullscreen></iframe>
             </div>
@@ -221,7 +238,7 @@
           <article class="card">
             <div class="video-wrapper">
               <iframe src="https://www.youtube.com/embed/zvXhwo2hOvo?autoplay=1&mute=1&loop=1&playlist=zvXhwo2hOvo&controls=0&rel=0" 
-                      title="瞬間被害リスク評価" 
+                      title="瞬間被害リスク評価 (dp=0.2m)" 
                       allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
                       allowfullscreen></iframe>
             </div>
@@ -231,7 +248,7 @@
           <article class="card">
             <div class="video-wrapper">
               <iframe src="https://www.youtube.com/embed/FX7Og65_7zo?autoplay=1&mute=1&loop=1&playlist=FX7Og65_7zo&controls=0&rel=0" 
-                      title="累計被害リスク評価" 
+                      title="累計被害リスク評価 (dp=0.2m)" 
                       allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
                       allowfullscreen></iframe>
             </div>
@@ -239,6 +256,32 @@
           </article>
 
         </div>
+
+        <h2 class="category-title">粒子間距離0.5mにおけるリスク評価</h2>
+        <div class="projects-grid">
+          
+          <article class="card">
+            <div class="video-wrapper">
+              <iframe src="https://www.youtube.com/embed/0v_F_0_mNjg?autoplay=1&mute=1&loop=1&playlist=0v_F_0_mNjg&controls=0&rel=0"
+                      title="瞬間被害リスク評価 (dp=0.5m)" 
+                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
+                      allowfullscreen></iframe>
+            </div>
+            <h3>瞬間被害リスク評価</h3>
+          </article>
+
+          <article class="card">
+            <div class="video-wrapper">
+              <iframe src="https://www.youtube.com/embed/49RP_y_huqQ?autoplay=1&mute=1&loop=1&playlist=49RP_y_huqQ&controls=0&rel=0"
+                      title="累計被害リスク評価 (dp=0.5m)" 
+                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
+                      allowfullscreen></iframe>
+            </div>
+            <h3>累計被害リスク評価</h3>
+          </article>
+
+        </div>
+
       </div>
     </section>
 
