@@ -1,0 +1,775 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+<meta http-equiv="Pragma" content="no-cache" />
+<meta http-equiv="Expires" content="0" />
+<title>AOGS 発表練習</title>
+<style>
+  :root{
+    --blue:#2b7cff;
+    --purple:#7a5cff;
+    --bg:#0d1117;
+    --panel:#151b23;
+    --panel2:#1b232d;
+    --text:#e8edf5;
+    --muted:#8b98a9;
+    --accent:#5fd0ff;
+    --mark:#ffcf4d;
+    --mark-text:#1a1a1a;
+    --speaking:#2b7cff;
+    --manuscript-font-size:19px;
+    --safe-top: env(safe-area-inset-top, 0px);
+    --safe-bottom: env(safe-area-inset-bottom, 0px);
+  }
+  *{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
+  html,body{
+    height:100%;
+    margin:0;
+    background:var(--bg);
+    color:var(--text);
+    font-family:"Segoe UI","Hiragino Kaku Gothic ProN","Yu Gothic","Noto Sans JP",sans-serif;
+    overscroll-behavior:none;
+  }
+  #app{
+    position:fixed;
+    inset:0;
+    display:flex;
+    flex-direction:column;
+    height:100dvh;
+    height:100vh;
+  }
+
+  /* ---------- Slide area ---------- */
+  #slideArea{
+    position:relative;
+    width:100%;
+    aspect-ratio:16/9;
+    background:#000;
+    flex-shrink:0;
+    overflow:hidden;
+    touch-action:none;
+    padding-top:var(--safe-top);
+    box-sizing:content-box;
+  }
+  #slideImgWrap{
+    position:absolute;
+    inset:0;
+    top:var(--safe-top);
+  }
+  #slideImg{
+    width:100%;
+    height:100%;
+    object-fit:contain;
+    display:block;
+    user-select:none;
+    -webkit-user-drag:none;
+    pointer-events:none;
+    background:#000;
+  }
+  .nav-zone{
+    position:absolute;
+    top:var(--safe-top);
+    bottom:0;
+    width:15%;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    opacity:0;
+    transition:opacity .15s;
+    color:#fff;
+    font-size:22px;
+    background:linear-gradient(90deg, rgba(0,0,0,.35), transparent);
+    pointer-events:none;
+  }
+  .nav-zone.right{ right:0; background:linear-gradient(270deg, rgba(0,0,0,.35), transparent);}
+  .nav-zone.left{ left:0; }
+  #slideCounter{
+    position:absolute;
+    left:10px;
+    bottom:8px;
+    background:rgba(0,0,0,.45);
+    padding:3px 10px;
+    border-radius:999px;
+    font-size:12px;
+    letter-spacing:.02em;
+    color:#fff;
+  }
+  #progressBar{
+    position:absolute;
+    left:0; bottom:0;
+    height:3px;
+    background:linear-gradient(90deg, var(--blue), var(--accent));
+    width:0%;
+    transition:width .2s;
+  }
+  #settingsBtn{
+    position:absolute;
+    top:calc(var(--safe-top) + 8px);
+    right:8px;
+    width:38px;
+    height:38px;
+    border-radius:50%;
+    border:none;
+    background:rgba(15,20,28,.55);
+    color:#fff;
+    font-size:19px;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    backdrop-filter:blur(4px);
+    z-index:5;
+  }
+
+  /* ---------- TTS bar ---------- */
+  #ttsBar{
+    display:flex;
+    align-items:center;
+    gap:8px;
+    padding:8px 12px;
+    background:var(--panel2);
+    border-bottom:1px solid #232b36;
+    flex-shrink:0;
+  }
+  #ttsBar button{
+    border:none;
+    background:#232b36;
+    color:var(--text);
+    width:36px;
+    height:36px;
+    border-radius:50%;
+    font-size:15px;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    flex-shrink:0;
+  }
+  #ttsBar button:active{ background:#2d3846; }
+  #ttsBar input[type=range]{ flex:1; accent-color:var(--blue); }
+  #ttsRateLabel{ font-size:12px; color:var(--muted); width:40px; text-align:right; flex-shrink:0;}
+
+  /* ---------- Manuscript ---------- */
+  #manuscript{
+    flex:1;
+    overflow-y:auto;
+    -webkit-overflow-scrolling:touch;
+    padding:16px 18px calc(24px + var(--safe-bottom));
+    font-size:var(--manuscript-font-size);
+    line-height:1.9;
+    touch-action:pan-y;
+  }
+  #manuscript p.para{
+    margin:0 0 1.1em 0;
+  }
+  #manuscript p.empty{ color:var(--muted); }
+  .tok{
+    position:relative;
+    display:inline-block;
+    white-space:nowrap;
+  }
+  .kana{
+    position:absolute;
+    left:50%;
+    bottom:100%;
+    transform:translateX(-50%);
+    font-size:.52em;
+    color:var(--accent);
+    white-space:nowrap;
+    display:none;
+    line-height:1.2;
+    pointer-events:none;
+  }
+  body.show-kana .kana{ display:block; }
+  body.show-kana #manuscript{ line-height:2.5; }
+  .word{
+    border-radius:4px;
+    padding:0 1px;
+  }
+  .word.marked{
+    background:var(--mark);
+    color:var(--mark-text);
+  }
+  .word.speaking{
+    background:var(--speaking);
+    color:#fff;
+  }
+  .slash-mark{
+    display:none;
+    color:var(--muted);
+    margin:0 .2em;
+    font-weight:600;
+  }
+  body.show-slash .slash-mark{ display:inline; }
+
+  /* ---------- Settings drawer ---------- */
+  #overlay{
+    position:fixed;
+    inset:0;
+    background:rgba(0,0,0,.5);
+    opacity:0;
+    pointer-events:none;
+    transition:opacity .2s;
+    z-index:20;
+  }
+  #overlay.open{ opacity:1; pointer-events:auto; }
+  #settingsPanel{
+    position:fixed;
+    top:0; right:0;
+    bottom:0;
+    width:min(320px, 84vw);
+    background:var(--panel);
+    box-shadow:-8px 0 24px rgba(0,0,0,.4);
+    transform:translateX(100%);
+    transition:transform .25s ease;
+    z-index:21;
+    padding:calc(16px + var(--safe-top)) 20px calc(20px + var(--safe-bottom));
+    overflow-y:auto;
+  }
+  #settingsPanel.open{ transform:translateX(0); }
+  #settingsPanel h2{
+    font-size:16px;
+    margin:0 0 18px;
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+  }
+  #closeSettings{
+    background:none; border:none; color:var(--muted); font-size:20px; padding:4px;
+  }
+  .setting-row{
+    margin-bottom:22px;
+  }
+  .setting-row label{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    font-size:14px;
+    color:var(--text);
+    margin-bottom:8px;
+  }
+  .setting-row .check-row{
+    display:flex;
+    align-items:center;
+    gap:10px;
+    justify-content:flex-start;
+  }
+  .setting-row input[type=range]{ width:100%; accent-color:var(--blue); }
+  .setting-row input[type=checkbox]{ width:18px; height:18px; accent-color:var(--blue); }
+  #fontSizeVal{ color:var(--muted); font-weight:normal; }
+  .ghost-btn{
+    width:100%;
+    padding:10px;
+    border-radius:8px;
+    border:1px solid #2d3846;
+    background:transparent;
+    color:var(--text);
+    font-size:14px;
+  }
+  .ghost-btn:active{ background:#1f2a35; }
+  .setting-hint{
+    font-size:12px;
+    color:var(--muted);
+    margin-top:6px;
+    line-height:1.5;
+  }
+  #syncStatus{
+    position:fixed;
+    left:50%;
+    bottom:14px;
+    transform:translate(-50%,20px);
+    background:rgba(20,26,34,.92);
+    color:var(--text);
+    font-size:12px;
+    padding:7px 14px;
+    border-radius:999px;
+    opacity:0;
+    transition:all .25s;
+    z-index:30;
+    pointer-events:none;
+  }
+  #syncStatus.show{ opacity:1; transform:translate(-50%,0); }
+</style>
+</head>
+<body>
+<div id="app">
+  <div id="slideArea">
+    <div id="slideImgWrap">
+      <img id="slideImg" src="" alt="slide" />
+    </div>
+    <div class="nav-zone left" id="zoneLeft">&#10094;</div>
+    <div class="nav-zone right" id="zoneRight">&#10095;</div>
+    <div id="progressBar"></div>
+    <div id="slideCounter">1 / 1</div>
+    <button id="settingsBtn" aria-label="設定">&#9881;</button>
+  </div>
+
+  <div id="ttsBar">
+    <button id="playBtn" aria-label="再生">&#9658;</button>
+    <button id="stopBtn" aria-label="停止">&#9632;</button>
+    <input type="range" id="rateSlider" min="0.5" max="1.5" step="0.05" value="0.9" />
+    <span id="ttsRateLabel">0.90x</span>
+  </div>
+
+  <div id="manuscript">
+    <p class="empty">読み込み中...</p>
+  </div>
+</div>
+
+<div id="overlay"></div>
+<div id="settingsPanel">
+  <h2>設定 <button id="closeSettings" aria-label="閉じる">&times;</button></h2>
+
+  <div class="setting-row">
+    <label>文字サイズ <span id="fontSizeVal">19px</span></label>
+    <input type="range" id="fontSizeSlider" min="14" max="30" step="1" value="19" />
+  </div>
+
+  <div class="setting-row">
+    <div class="check-row">
+      <input type="checkbox" id="slashCheck" />
+      <label for="slashCheck" style="margin:0;">区切り「/」を表示する</label>
+    </div>
+    <div class="setting-hint">読む際の区切りポイントに / を表示します。</div>
+  </div>
+
+  <div class="setting-row">
+    <div class="check-row">
+      <input type="checkbox" id="kanaCheck" />
+      <label for="kanaCheck" style="margin:0;">発音（カタカナ）を表示する</label>
+    </div>
+    <div class="setting-hint">単語の上に読み方の目安をカタカナで表示します。</div>
+  </div>
+
+  <div class="setting-row">
+    <button class="ghost-btn" id="clearMarksBtn">この原稿全体のマークをすべて解除</button>
+    <div class="setting-hint">読みにくい単語をタップするとマークできます。マークは端末に保存されます。</div>
+  </div>
+</div>
+
+<div id="syncStatus"></div>
+
+<script>
+(function(){
+  "use strict";
+
+  var TOTAL_SLIDES = 25;
+  var manuscriptData = {};
+  var currentSlide = 0;
+  var wordSpans = [];
+  var ttsFullText = "";
+  var lastManuscriptRaw = "";
+  var currentUtterance = null;
+  var isPaused = false;
+  var englishVoice = null;
+
+  var KATAKANA = {
+    "yukitake":"ユキタケ","wakamiya":"ワカミヤ","nagasaki":"ナガサキ","university":"ユニバーシティ",
+    "i'm":"アイム","presentation":"プレゼンテーション","title":"タイトル",
+    "background":"バックグラウンド","purpose":"パーパス","recent":"リーセント","years":"イヤーズ",
+    "heavy":"ヘヴィー","rainfall":"レインフォール","disasters":"ディザスターズ","occurred":"オカード",
+    "frequently":"フリークエントリー","japan":"ジャパン","conducting":"コンダクティング","detailed":"ディテールド",
+    "inundation":"イナンデイション","analysis":"アナリシス","predict":"プリディクト","various":"ヴァリアス",
+    "damage":"ダメージ","risks":"リスクス","includes":"インクルーズ","investigating":"インベスティゲーティング",
+    "exposed":"イクスポーズド","population":"ポピュレーション","behavior":"ビヘイビア","inundated":"イナンデイテッド",
+    "flows":"フロウズ","flow":"フロー","flow's":"フロウズ","buildings":"ビルディングス","building":"ビルディング",
+    "methods":"メソッズ","method":"メソッド","grid":"グリッド","grid-method":"グリッド・メソッド",
+    "particle":"パーティクル","particles":"パーティクルズ","divides":"ディヴァイズ","cells":"セルズ","cell":"セル",
+    "solves":"ソルヴズ","treats":"トリーツ","moving":"ムービング","set":"セット","calculates":"カルキュレイツ",
+    "interact":"インタラクト","commonly":"コモンリー","example":"イグザンプル","rri":"アール・アール・アイ",
+    "model":"モデル","models":"モデルズ","hazard":"ハザード","maps":"マップス","attracted":"アトラクテッド",
+    "attention":"アテンション","improvements":"インプルーヴメンツ","computer":"コンピューター",
+    "processing":"プロセッシング","power":"パワー","existing":"イグジスティング","studies":"スタディーズ",
+    "surface":"サーフェス","caused":"コーズド","virtual":"ヴァーチャル","city":"シティ","cities":"シティーズ",
+    "however":"ハウエバー","actual":"アクチュアル","breach":"ブリーチ","ministry":"ミニストリー",
+    "infrastructure":"インフラストラクチャー","transport":"トランスポート","tourism":"ツーリズム",
+    "mlit":"エム・エル・アイ・ティー","provides":"プロヴァイズ","country":"カントリー","plateau":"プラトー",
+    "citygml":"シティ・ジー・エム・エル","format":"フォーマット","international":"インターナショナル",
+    "standard":"スタンダード","shape":"シェイプ","ground":"グラウンド","extra":"エクストラ",
+    "information":"インフォメーション","construction":"コンストラクション","year":"イヤー","study":"スタディ",
+    "factors":"ファクターズ","related":"リレイテッド","effective":"イフェクティブ","affinity":"アフィニティ",
+    "approach":"アプローチ","smoothed":"スムーズド","hydrodynamics":"ハイドロダイナミクス","sph":"エス・ピー・エイチ",
+    "kernel":"カーネル","function":"ファンクション","gives":"ギヴズ","weight":"ウェイト","nearby":"ニアバイ",
+    "farther":"ファーザー","weakly":"ウィークリー","compressible":"コンプレッシブル","governing":"ガヴァニング",
+    "equations":"イクウェイジョンズ","equation":"イクウェイジョン","describe":"ディスクライブ",
+    "momentum":"モメンタム","conservation":"コンサーヴェーション","continuity":"コンティニュイティ",
+    "state":"ステイト","target":"ターゲット","area":"エリア","ikawabuchi-machi":"イカワブチマチ",
+    "kumamoto":"クマモト","shirakawa":"シラカワ","river":"リバー","bank":"バンク","landmarks":"ランドマークス",
+    "elementary":"エレメンタリー","school":"スクール","shrine":"シュライン","flooded":"フラッデッド",
+    "northern":"ノーザン","kyushu":"キューシュー","july":"ジュライ","shinsui":"シンスイ","navi":"ナビ",
+    "extent":"エクステント","depth":"デプス","reference":"レファレンス","references":"レファレンシズ",
+    "values":"ヴァリューズ","comparison":"コンパリソン","software":"ソフトウェア","dualsphysics":"デュアル・エスピーエイチィクス",
+    "free":"フリー","open-source":"オープンソース","program":"プログラム","gpu":"ジー・ピー・ユー",
+    "computing":"コンピューティング","kinds":"カインズ","fluid":"フルーイド","settings":"セッティングス",
+    "distance":"ディスタンス","meters":"メーターズ","meter":"メーター","wide":"ワイド","high":"ハイ",
+    "inflow":"インフロー","velocity":"ヴェロシティ","second":"セカンド","seconds":"セカンズ",
+    "digital":"デジタル","elevation":"エレベーション","lod":"エル・オー・ディー","represents":"リプリゼンツ",
+    "footprint":"フットプリント","height":"ハイト","ran":"ラン","twice":"トゥワイス","without":"ウィザウト",
+    "converted":"コンヴァーテッド","unity":"ユニティ","blender":"ブレンダー","new":"ニュー",
+    "particle-inflow":"パーティクル・インフロー","dsph":"ディー・エス・ピー・エイチ","hours":"アワーズ",
+    "additional":"アディショナル","calculated":"カルキュレイテッド","forces":"フォーシズ","force":"フォース",
+    "visualized":"ヴィジュアライズド","paraview":"パラビュー","quickly":"クイックリー","nothing":"ナッシング",
+    "block":"ブロック","blocked":"ブロックト","weakened":"ウィークンド","resulting":"リザルティング",
+    "slower":"スロウアー","closely":"クロースリー","swirls":"スワールズ","faster":"ファスター","narrow":"ナロー",
+    "gaps":"ギャップス","density":"デンシティ","comparing":"コンペアリング","higher":"ハイアー",
+    "compared":"コンペアード","smaller":"スモーラー","horizontal":"ホリゾンタル","direction":"ディレクション",
+    "vertically":"ヴァーティカリー","figure":"フィギュア","acting":"アクティング","whole":"ホール",
+    "graph":"グラフ","directly":"ダイレクトリー","hits":"ヒッツ","wall":"ウォール","total":"トータル",
+    "reaching":"リーチング","kilonewtons":"キロニュートンズ","specific":"スペシフィック","numbers":"ナンバーズ",
+    "evaluate":"エヴァリュエイト","collapse":"コラプス","detail":"ディテール","summary":"サマリー",
+    "impact":"インパクト","since":"シンス","needed":"ニーディッド","appear":"アピア","forward":"フォワード",
+    "assessment":"アセスメント","changes":"チェンジズ","entering":"エンタリング","floating":"フローティング",
+    "debris":"デブリ","cars":"カーズ","trees":"トゥリーズ","development":"ディベロップメント",
+    "wider":"ワイダー","range":"レンジ","concludes":"コンクルーズ","top-right":"トップ・ライト",
+    "bottom-right":"ボトム・ライト","left":"レフト","right":"ライト"
+  };
+
+  var BREAK_WORDS = new Set(["and","but","because","which","so","since","while","when","if","or","that","then"]);
+
+  function cleanKey(tok){
+    return tok.replace(/^[^A-Za-z]+|[^A-Za-z]+$/g, "").toLowerCase();
+  }
+  function shouldBreakAfter(tok){
+    if (/[,;:]["')”’]*$/.test(tok)) return true;
+    var w = cleanKey(tok);
+    return BREAK_WORDS.has(w);
+  }
+
+  function parseManuscript(text){
+    var blocks = text.split(/\r?\n[ \t]*\r?\n/).map(function(b){return b.trim();}).filter(Boolean);
+    var map = {};
+    blocks.forEach(function(block){
+      var lines = block.split(/\r?\n/).map(function(l){return l.trim();});
+      var idx = parseInt(lines[0], 10);
+      if (isNaN(idx)) return;
+      map[idx] = lines.slice(1).filter(function(l){return l.length > 0;});
+    });
+    return map;
+  }
+
+  function pad2(n){ return (n < 10 ? "0" : "") + n; }
+
+  // ---------- marked words (persisted) ----------
+  var markedWords = new Set();
+  try {
+    var saved = JSON.parse(localStorage.getItem("aogs_marks") || "[]");
+    saved.forEach(function(k){ markedWords.add(k); });
+  } catch(e){}
+  function saveMarks(){
+    try { localStorage.setItem("aogs_marks", JSON.stringify(Array.from(markedWords))); } catch(e){}
+  }
+  function onWordTap(e){
+    var el = e.currentTarget;
+    var key = el.dataset.key;
+    if (markedWords.has(key)){
+      markedWords.delete(key);
+      el.classList.remove("marked");
+    } else {
+      markedWords.add(key);
+      el.classList.add("marked");
+    }
+    saveMarks();
+  }
+
+  // ---------- rendering ----------
+  var manuscriptEl = document.getElementById("manuscript");
+
+  function renderManuscript(idx){
+    manuscriptEl.innerHTML = "";
+    wordSpans = [];
+    var parts = [];
+    var paras = manuscriptData[idx];
+    if (!paras || paras.length === 0){
+      var p = document.createElement("p");
+      p.className = "empty";
+      p.textContent = "(この原稿はありません)";
+      manuscriptEl.appendChild(p);
+      ttsFullText = "";
+      return;
+    }
+    var charOffset = 0;
+    paras.forEach(function(paraText, pIdx){
+      var p = document.createElement("p");
+      p.className = "para";
+      var tokens = paraText.split(/\s+/).filter(Boolean);
+      tokens.forEach(function(tok, tIdx){
+        var wrap = document.createElement("span");
+        wrap.className = "tok";
+
+        var key = cleanKey(tok);
+        var kanaText = KATAKANA[key];
+        if (kanaText){
+          var kana = document.createElement("span");
+          kana.className = "kana";
+          kana.textContent = kanaText;
+          wrap.appendChild(kana);
+        }
+
+        var wspan = document.createElement("span");
+        wspan.className = "word";
+        wspan.textContent = tok;
+        var wordKey = idx + ":" + pIdx + ":" + tIdx;
+        wspan.dataset.key = wordKey;
+        if (markedWords.has(wordKey)) wspan.classList.add("marked");
+        wspan.addEventListener("click", onWordTap);
+        wrap.appendChild(wspan);
+
+        p.appendChild(wrap);
+        parts.push(tok);
+        wordSpans.push({el: wspan, start: charOffset, end: charOffset + tok.length});
+        charOffset += tok.length + 1;
+
+        p.appendChild(document.createTextNode(" "));
+        if (shouldBreakAfter(tok)){
+          var slash = document.createElement("span");
+          slash.className = "slash-mark";
+          slash.textContent = "/";
+          p.appendChild(slash);
+          p.appendChild(document.createTextNode(" "));
+          charOffset += 2;
+        }
+      });
+      manuscriptEl.appendChild(p);
+    });
+    ttsFullText = parts.join(" ");
+  }
+
+  // ---------- slide navigation ----------
+  var slideImg = document.getElementById("slideImg");
+  var slideCounter = document.getElementById("slideCounter");
+  var progressBar = document.getElementById("progressBar");
+
+  function showSlide(idx){
+    idx = Math.max(0, Math.min(TOTAL_SLIDES - 1, idx));
+    currentSlide = idx;
+    slideImg.src = "slides/slide_" + pad2(idx) + ".jpg";
+    slideCounter.textContent = (idx + 1) + " / " + TOTAL_SLIDES;
+    progressBar.style.width = ((idx + 1) / TOTAL_SLIDES * 100) + "%";
+    stopSpeech();
+    renderManuscript(idx);
+    manuscriptEl.scrollTop = 0;
+    try { localStorage.setItem("aogs_last_slide", String(idx)); } catch(e){}
+  }
+  function nextSlide(){ showSlide(currentSlide + 1); }
+  function prevSlide(){ showSlide(currentSlide - 1); }
+
+  // ---------- swipe handling ----------
+  var slideArea = document.getElementById("slideArea");
+  var touchStartX = 0, touchStartY = 0, touching = false;
+
+  slideArea.addEventListener("pointerdown", function(e){
+    if (e.target.closest("#settingsBtn")) return;
+    touchStartX = e.clientX;
+    touchStartY = e.clientY;
+    touching = true;
+  });
+  slideArea.addEventListener("pointerup", function(e){
+    if (!touching) return;
+    touching = false;
+    if (e.target.closest("#settingsBtn")) return;
+    var dx = e.clientX - touchStartX;
+    var dy = e.clientY - touchStartY;
+    if (Math.abs(dx) > 45 && Math.abs(dx) > Math.abs(dy) * 1.4){
+      if (dx < 0) nextSlide(); else prevSlide();
+    } else if (Math.abs(dx) < 10 && Math.abs(dy) < 10){
+      var w = slideArea.clientWidth;
+      var x = e.clientX - slideArea.getBoundingClientRect().left;
+      if (x < w * 0.25) prevSlide();
+      else if (x > w * 0.75) nextSlide();
+    }
+  });
+  slideArea.addEventListener("pointercancel", function(){ touching = false; });
+
+  document.addEventListener("keydown", function(e){
+    if (e.key === "ArrowRight") nextSlide();
+    if (e.key === "ArrowLeft") prevSlide();
+  });
+
+  // ---------- settings drawer ----------
+  var settingsBtn = document.getElementById("settingsBtn");
+  var settingsPanel = document.getElementById("settingsPanel");
+  var overlay = document.getElementById("overlay");
+  var closeSettings = document.getElementById("closeSettings");
+
+  function openSettings(){ settingsPanel.classList.add("open"); overlay.classList.add("open"); }
+  function closeSettingsFn(){ settingsPanel.classList.remove("open"); overlay.classList.remove("open"); }
+  settingsBtn.addEventListener("click", openSettings);
+  closeSettings.addEventListener("click", closeSettingsFn);
+  overlay.addEventListener("click", closeSettingsFn);
+
+  // font size
+  var fontSizeSlider = document.getElementById("fontSizeSlider");
+  var fontSizeVal = document.getElementById("fontSizeVal");
+  function setFontSize(px){
+    document.documentElement.style.setProperty("--manuscript-font-size", px + "px");
+    fontSizeVal.textContent = px + "px";
+    fontSizeSlider.value = px;
+    try { localStorage.setItem("aogs_fontsize", String(px)); } catch(e){}
+  }
+  fontSizeSlider.addEventListener("input", function(){ setFontSize(fontSizeSlider.value); });
+
+  // slash toggle
+  var slashCheck = document.getElementById("slashCheck");
+  slashCheck.addEventListener("change", function(){
+    document.body.classList.toggle("show-slash", slashCheck.checked);
+    try { localStorage.setItem("aogs_slash", slashCheck.checked ? "1" : "0"); } catch(e){}
+  });
+
+  // kana toggle
+  var kanaCheck = document.getElementById("kanaCheck");
+  kanaCheck.addEventListener("change", function(){
+    document.body.classList.toggle("show-kana", kanaCheck.checked);
+    try { localStorage.setItem("aogs_kana", kanaCheck.checked ? "1" : "0"); } catch(e){}
+  });
+
+  // clear marks
+  document.getElementById("clearMarksBtn").addEventListener("click", function(){
+    markedWords.clear();
+    saveMarks();
+    document.querySelectorAll(".word.marked").forEach(function(el){ el.classList.remove("marked"); });
+  });
+
+  // restore saved settings
+  (function restoreSettings(){
+    var fs = parseInt(localStorage.getItem("aogs_fontsize") || "19", 10);
+    setFontSize(fs);
+    var slash = localStorage.getItem("aogs_slash") === "1";
+    slashCheck.checked = slash;
+    document.body.classList.toggle("show-slash", slash);
+    var kana = localStorage.getItem("aogs_kana") === "1";
+    kanaCheck.checked = kana;
+    document.body.classList.toggle("show-kana", kana);
+  })();
+
+  // ---------- text-to-speech (shadowing) ----------
+  var playBtn = document.getElementById("playBtn");
+  var stopBtn = document.getElementById("stopBtn");
+  var rateSlider = document.getElementById("rateSlider");
+  var ttsRateLabel = document.getElementById("ttsRateLabel");
+  var currentHighlighted = null;
+
+  function pickVoice(){
+    if (!("speechSynthesis" in window)) return;
+    var voices = speechSynthesis.getVoices();
+    var en = voices.filter(function(v){ return /^en/i.test(v.lang); });
+    englishVoice = en.find(function(v){ return /US/i.test(v.lang); }) || en[0] || null;
+  }
+  if ("speechSynthesis" in window){
+    pickVoice();
+    speechSynthesis.onvoiceschanged = pickVoice;
+  }
+
+  function highlightWordAt(charIndex){
+    if (currentHighlighted) currentHighlighted.classList.remove("speaking");
+    var found = null;
+    for (var i = 0; i < wordSpans.length; i++){
+      var w = wordSpans[i];
+      if (charIndex >= w.start && charIndex <= w.end){ found = w; break; }
+    }
+    if (found){
+      found.el.classList.add("speaking");
+      currentHighlighted = found.el;
+      found.el.scrollIntoView({block: "center", behavior: "smooth"});
+    }
+  }
+
+  function stopSpeech(){
+    if ("speechSynthesis" in window) speechSynthesis.cancel();
+    isPaused = false;
+    playBtn.innerHTML = "&#9658;";
+    if (currentHighlighted){ currentHighlighted.classList.remove("speaking"); currentHighlighted = null; }
+  }
+
+  function playSpeech(){
+    if (!("speechSynthesis" in window)){
+      alert("お使いのブラウザは読み上げ（Web Speech API）に対応していません。");
+      return;
+    }
+    if (speechSynthesis.paused && isPaused){
+      speechSynthesis.resume();
+      isPaused = false;
+      playBtn.innerHTML = "&#10074;&#10074;";
+      return;
+    }
+    if (!ttsFullText){
+      return;
+    }
+    speechSynthesis.cancel();
+    var utt = new SpeechSynthesisUtterance(ttsFullText);
+    utt.lang = "en-US";
+    if (englishVoice) utt.voice = englishVoice;
+    utt.rate = parseFloat(rateSlider.value);
+    utt.onboundary = function(ev){
+      if (ev.name && ev.name !== "word") return;
+      highlightWordAt(ev.charIndex);
+    };
+    utt.onend = function(){
+      playBtn.innerHTML = "&#9658;";
+      isPaused = false;
+      if (currentHighlighted){ currentHighlighted.classList.remove("speaking"); currentHighlighted = null; }
+    };
+    currentUtterance = utt;
+    speechSynthesis.speak(utt);
+    playBtn.innerHTML = "&#10074;&#10074;";
+  }
+
+  playBtn.addEventListener("click", function(){
+    if ("speechSynthesis" in window && speechSynthesis.speaking && !speechSynthesis.paused){
+      speechSynthesis.pause();
+      isPaused = true;
+      playBtn.innerHTML = "&#9658;";
+    } else {
+      playSpeech();
+    }
+  });
+  stopBtn.addEventListener("click", stopSpeech);
+  rateSlider.addEventListener("input", function(){
+    ttsRateLabel.textContent = parseFloat(rateSlider.value).toFixed(2) + "x";
+    try { localStorage.setItem("aogs_rate", rateSlider.value); } catch(e){}
+  });
+  (function restoreRate(){
+    var r = localStorage.getItem("aogs_rate");
+    if (r){ rateSlider.value = r; }
+    ttsRateLabel.textContent = parseFloat(rateSlider.value).toFixed(2) + "x";
+  })();
+
+  // ---------- syncStatus toast ----------
+  var syncStatus = document.getElementById("syncStatus");
+  var syncTimer = null;
+  function showToast(msg){
+    syncStatus.textContent = msg;
+    syncStatus.classList.add("show");
+    clearTimeout(syncTimer);
+    syncTimer = setTimeout(function(){ syncStatus.classList.remove("show"); }, 2200);
+  }
+
+  // ---------- load & auto-refresh manuscript ----------
+  function loadManuscript(isRefresh){
+    return fetch("AOGS_manuscript.txt?t=" + Date.now(), {cache: "no-store"})
+      .then(function(res){ return res.text(); })
+      .then(function(text){
+        if (text === lastManuscriptRaw) return;
+        var isFirst = !lastManuscriptRaw;
+        lastManuscriptRaw = text;
+        manuscriptData = parseManuscript(text);
+        renderManuscript(currentSlide);
+        if (isRefresh && !isFirst) showToast("原稿を更新しました");
+      })
+      .catch(function(err){
+        if (!isRefresh) manuscriptEl.innerHTML = '<p class="empty">原稿の読み込みに失敗しました: ' + err + '</p>';
+      });
+  }
+
+  loadManuscript(false).then(function(){
+    var last = parseInt(localStorage.getItem("aogs_last_slide") || "0", 10);
+    if (isNaN(last)) last = 0;
+    showSlide(last);
+  });
+
+  setInterval(function(){ loadManuscript(true); }, 15000);
+
+})();
+</script>
+</body>
+</html>

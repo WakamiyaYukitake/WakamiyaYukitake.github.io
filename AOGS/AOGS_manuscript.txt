@@ -1,0 +1,111 @@
+0
+I'm Yukitake Wakamiya from Nagasaki University.
+The title of my presentation is "Analysis of River Flooding using Particle Method with PLATEAU."
+
+1
+First, the background and purpose.
+In recent years, heavy rainfall disasters have occurred frequently in Japan.
+By conducting more detailed river inundation analysis, we need to predict various damage risks.
+This includes investigating the exposed population, the behavior of inundated flows, and damage to buildings.
+
+2
+There are two main methods for river flood analysis: the grid method and the particle method.
+The grid method divides the area into cells, and solves the flow cell by cell.
+The particle method treats the water as a set of moving particles, and calculates how they interact with each other.
+
+3
+The grid method is commonly used for river flood analysis in Japan, for example in the RRI model and in flood hazard maps.
+
+4
+The particle method has attracted attention with recent improvements in computer processing power.
+There are existing studies on surface flow caused by rainfall, and on river flood analysis using virtual city models.
+However, very few studies have used an actual city model to analyze flooding after a river breach.
+
+5
+In Japan, the Ministry of Land, Infrastructure, Transport and Tourism, or MLIT, provides 3D city data for cities across the country as a model called PLATEAU.
+PLATEAU data is in a format called CityGML, an international standard for 3D city models.
+It includes not just the shape of the ground and buildings, but also extra information, such as building height and construction year.
+
+6
+In this study, we use PLATEAU and the particle method to analyze flooding caused by a river breach.
+We look at several factors related to damage risk.
+We also study how effective this method is for flood analysis, and how well PLATEAU and the particle method work together.
+
+7
+Next, the approach.
+This study uses a particle method called Smoothed Particle Hydrodynamics, or SPH.
+In SPH, each particle has a kernel function, which gives more weight to nearby particles, and less weight to particles that are farther away.
+
+8
+In the analysis, the fluid is treated as weakly compressible.
+These governing equations describe momentum conservation, continuity, and the equation of state.
+
+9
+Next, the method.
+The target area is Ikawabuchi-machi in Kumamoto City, on the right bank of the Shirakawa River.
+Nearby landmarks include a shopping street, an elementary school, and a shrine.
+
+10
+This area was actually flooded during the heavy rain event in northern Kyushu, in July 2012.
+
+11
+For this area, a grid-method flood analysis is available from Shinsui Navi, provided by MLIT.
+We use its breach location, flood extent, and water depth as reference values for our own analysis, and as a comparison for the grid method.
+
+12
+The software used for the analysis is DualSPHysics.
+It is a free, open-source program that supports GPU computing, and is used in many kinds of fluid analysis.
+
+13
+For the settings, the analysis time is 600 seconds, and the distance between particles is 0.5 meters.
+The breach is 45 meters wide and 2 meters high, with an inflow velocity of 1 meter per second.
+
+14
+The data used are PLATEAU's digital elevation model, and its building model.
+For the buildings, we used LOD1 data, which represents each building as a simple box, with its footprint and height.
+We ran the analysis twice: once without buildings, and once with buildings.
+
+15
+We converted the 3D city model, with and without buildings, from CityGML format to STL format, using Unity and Blender.
+Then, using a new particle-inflow program, we ran the DSPH analysis for about 8.5 hours, to get the flood behavior and velocity of each particle.
+After that, an additional program calculated the flood depth and the forces on buildings from these results, over several hours.
+Finally, we visualized the results using ParaView.
+
+16
+Now, the results.
+Without buildings, the flood flows quickly, because there is nothing to block it.
+With buildings, the flow's momentum is weakened, resulting in a slower velocity.
+
+17
+Looking more closely at the results with buildings, the flow swirls in some areas, and becomes faster in narrow gaps between buildings.
+
+18
+The flood depth is calculated from the density of the particles.
+Comparing the two cases, the flood depth is higher with buildings than without.
+
+19
+We compared the flooded area of each case with the grid method.
+Without buildings, the result was close to the grid method.
+With buildings, the flooded area was about 64% smaller, because the buildings blocked the horizontal flow, and changed its direction vertically.
+
+20
+The left figure shows where fluid forces are acting on buildings across the whole analysis area, at 600 seconds — the end of the simulation.
+The top-right graph then shows how the force changes over time, at a point where the flow directly hits a building wall.
+The bottom-right graph shows the total force over time, for the wall that contains that point, reaching about 1,000 kilonewtons by 600 seconds.
+By showing specific numbers like this, we believe we can evaluate risks such as building collapse in more detail.
+
+21
+Finally, a summary.
+With the particle method, we were able to determine the flood flow's behavior — its velocity, depth, and inundation area — as well as its impact on buildings.
+Without buildings, the results were close to the grid method, showing that this approach is effective for flood analysis.
+Since we only needed elevation data and a building model to get these results, PLATEAU and the particle method appear to work well together.
+
+22
+Going forward, we plan to look at damage risk assessment for each building, changes in flood flow caused by water entering buildings, and changes in flood paths caused by floating debris such as cars and trees.
+With further development, we believe a single analysis will be able to show a wider range of damage risks than in this study.
+
+23
+These are the references used in this study.
+
+24
+That concludes my presentation. Thank you for your attention.
