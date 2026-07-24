@@ -20,6 +20,8 @@
     --mark:#ffcf4d;
     --mark-text:#1a1a1a;
     --speaking:#2b7cff;
+    --confirmed:#34d399;
+    --confirmed-text:#062e1d;
     --manuscript-font-size:19px;
     --safe-top: env(safe-area-inset-top, 0px);
     --safe-bottom: env(safe-area-inset-bottom, 0px);
@@ -149,6 +151,15 @@
   #ttsBar button:active{ background:#2d3846; }
   #ttsBar input[type=range]{ flex:1; accent-color:var(--blue); }
   #ttsRateLabel{ font-size:12px; color:var(--muted); width:40px; text-align:right; flex-shrink:0;}
+  #voiceSourceBadge{
+    font-size:11px;
+    color:var(--accent);
+    background:rgba(95,208,255,.12);
+    border-radius:999px;
+    padding:3px 9px;
+    flex-shrink:0;
+    white-space:nowrap;
+  }
 
   /* ---------- Manuscript ---------- */
   #manuscript{
@@ -195,6 +206,10 @@
     background:var(--speaking);
     color:#fff;
   }
+  .word.confirmed{
+    background:var(--confirmed);
+    color:var(--confirmed-text);
+  }
   .slash-mark{
     display:none;
     color:var(--muted);
@@ -202,6 +217,62 @@
     font-weight:600;
   }
   body.show-slash .slash-mark{ display:inline; }
+
+  /* ---------- Pronunciation check mode ---------- */
+  #pronBanner{
+    position:sticky;
+    top:0;
+    z-index:2;
+    margin:0 0 14px;
+    padding:7px 12px;
+    background:rgba(52,211,153,.16);
+    border:1px solid rgba(52,211,153,.4);
+    color:var(--confirmed);
+    border-radius:8px;
+    font-size:12.5px;
+    display:flex;
+    align-items:center;
+    gap:8px;
+  }
+  #pronBanner .dot{
+    width:8px; height:8px; border-radius:50%;
+    background:var(--confirmed);
+    animation:pulse 1.2s infinite;
+    flex-shrink:0;
+  }
+  @keyframes pulse{
+    0%,100%{ opacity:1; }
+    50%{ opacity:.3; }
+  }
+
+  /* ---------- Stopwatch bar ---------- */
+  #stopwatchBar{
+    display:flex;
+    align-items:center;
+    gap:10px;
+    padding:8px 12px calc(8px + var(--safe-bottom));
+    background:var(--panel2);
+    border-top:1px solid #232b36;
+    flex-shrink:0;
+  }
+  #swDisplay{
+    font-variant-numeric:tabular-nums;
+    font-size:18px;
+    font-weight:600;
+    letter-spacing:.02em;
+    flex:1;
+  }
+  #stopwatchBar button{
+    border:none;
+    background:#232b36;
+    color:var(--text);
+    padding:8px 14px;
+    border-radius:8px;
+    font-size:13px;
+    flex-shrink:0;
+  }
+  #stopwatchBar button:active{ background:#2d3846; }
+  #swStartBtn.running{ background:var(--blue); color:#fff; }
 
   /* ---------- Settings drawer ---------- */
   #overlay{
@@ -254,6 +325,22 @@
     align-items:center;
     gap:10px;
     justify-content:flex-start;
+  }
+  .radio-row{
+    display:flex;
+    flex-direction:column;
+    gap:10px;
+  }
+  .radio-opt{
+    display:flex;
+    align-items:center;
+    gap:10px;
+    font-size:14px;
+    color:var(--text);
+    margin:0;
+  }
+  .radio-opt input[type=radio]{
+    width:18px; height:18px; accent-color:var(--blue);
   }
   .setting-row input[type=range]{ width:100%; accent-color:var(--blue); }
   .setting-row input[type=checkbox]{ width:18px; height:18px; accent-color:var(--blue); }
@@ -310,12 +397,21 @@
     <button id="stopBtn" aria-label="停止">&#9632;</button>
     <input type="range" id="rateSlider" min="0.5" max="1.5" step="0.05" value="0.9" />
     <span id="ttsRateLabel">0.90x</span>
+    <span id="voiceSourceBadge"></span>
   </div>
 
   <div id="manuscript">
     <p class="empty">読み込み中...</p>
   </div>
+
+  <div id="stopwatchBar">
+    <span id="swDisplay">00:00.00</span>
+    <button id="swStartBtn">スタート</button>
+    <button id="swResetBtn">リセット</button>
+  </div>
 </div>
+
+<audio id="shadowAudio" preload="none" playsinline></audio>
 
 <div id="overlay"></div>
 <div id="settingsPanel">
@@ -346,6 +442,23 @@
     <button class="ghost-btn" id="clearMarksBtn">この原稿全体のマークをすべて解除</button>
     <div class="setting-hint">読みにくい単語をタップするとマークできます。マークは端末に保存されます。</div>
   </div>
+
+  <div class="setting-row">
+    <label style="margin-bottom:10px;">読み上げ音声</label>
+    <div class="radio-row">
+      <label class="radio-opt"><input type="radio" name="voiceSource" id="voiceRecorded" value="recorded" /> 録音音声（発表者本人）</label>
+      <label class="radio-opt"><input type="radio" name="voiceSource" id="voiceTTS" value="tts" /> ブラウザ読み上げ（TTS）</label>
+    </div>
+    <div class="setting-hint">下の再生ボタンで、原稿に合わせてシャドーイング用の音声を再生します。</div>
+  </div>
+
+  <div class="setting-row">
+    <div class="check-row">
+      <input type="checkbox" id="pronCheckCheckbox" />
+      <label for="pronCheckCheckbox" style="margin:0;">発音確認モードを開始する</label>
+    </div>
+    <div class="setting-hint">マイクを使って、正しく発音できた部分を緑色に塗りつぶします（対応ブラウザのみ・マイクの使用許可が必要です）。</div>
+  </div>
 </div>
 
 <div id="syncStatus"></div>
@@ -363,6 +476,8 @@
   var currentUtterance = null;
   var isPaused = false;
   var englishVoice = null;
+  var wordTimesData = {};
+  var currentWordTimes = [];
 
   var KATAKANA = {
     "yukitake":"ユキタケ","wakamiya":"ワカミヤ","nagasaki":"ナガサキ","university":"ユニバーシティ",
@@ -478,6 +593,8 @@
   function renderManuscript(idx){
     manuscriptEl.innerHTML = "";
     wordSpans = [];
+    currentWordTimes = wordTimesData[String(idx)] || [];
+    if (pronCheckActive) insertPronBanner();
     var parts = [];
     var paras = manuscriptData[idx];
     if (!paras || paras.length === 0){
@@ -548,6 +665,7 @@
     progressBar.style.width = ((idx + 1) / TOTAL_SLIDES * 100) + "%";
     stopSpeech();
     renderManuscript(idx);
+    if (pronCheckActive) resetPronProgress();
     manuscriptEl.scrollTop = 0;
     try { localStorage.setItem("aogs_last_slide", String(idx)); } catch(e){}
   }
@@ -642,12 +760,17 @@
     document.body.classList.toggle("show-kana", kana);
   })();
 
-  // ---------- text-to-speech (shadowing) ----------
+  // ---------- shadowing playback: TTS or recorded audio ----------
   var playBtn = document.getElementById("playBtn");
   var stopBtn = document.getElementById("stopBtn");
   var rateSlider = document.getElementById("rateSlider");
   var ttsRateLabel = document.getElementById("ttsRateLabel");
+  var voiceSourceBadge = document.getElementById("voiceSourceBadge");
+  var shadowAudio = document.getElementById("shadowAudio");
+  var voiceRecordedRadio = document.getElementById("voiceRecorded");
+  var voiceTTSRadio = document.getElementById("voiceTTS");
   var currentHighlighted = null;
+  var voiceSource = "recorded";
 
   function pickVoice(){
     if (!("speechSynthesis" in window)) return;
@@ -660,28 +783,74 @@
     speechSynthesis.onvoiceschanged = pickVoice;
   }
 
+  function setHighlighted(el){
+    if (currentHighlighted && currentHighlighted !== el) currentHighlighted.classList.remove("speaking");
+    if (el){
+      el.classList.add("speaking");
+      currentHighlighted = el;
+      el.scrollIntoView({block: "center", behavior: "smooth"});
+    } else {
+      currentHighlighted = null;
+    }
+  }
+
   function highlightWordAt(charIndex){
-    if (currentHighlighted) currentHighlighted.classList.remove("speaking");
     var found = null;
     for (var i = 0; i < wordSpans.length; i++){
       var w = wordSpans[i];
       if (charIndex >= w.start && charIndex <= w.end){ found = w; break; }
     }
-    if (found){
-      found.el.classList.add("speaking");
-      currentHighlighted = found.el;
-      found.el.scrollIntoView({block: "center", behavior: "smooth"});
+    if (found) setHighlighted(found.el);
+  }
+
+  function highlightByTime(t){
+    var times = currentWordTimes;
+    var found = null;
+    for (var i = 0; i < times.length; i++){
+      var w = times[i];
+      if (!w) continue;
+      if (t >= w[0] && t <= w[1]){ found = wordSpans[i]; break; }
     }
+    if (found) setHighlighted(found.el);
+  }
+
+  function isCurrentlyPlaying(){
+    if (voiceSource === "recorded"){
+      return !shadowAudio.paused && !shadowAudio.ended;
+    }
+    return ("speechSynthesis" in window) && speechSynthesis.speaking && !speechSynthesis.paused;
   }
 
   function stopSpeech(){
     if ("speechSynthesis" in window) speechSynthesis.cancel();
     isPaused = false;
+    shadowAudio.pause();
+    shadowAudio.removeAttribute("src");
     playBtn.innerHTML = "&#9658;";
-    if (currentHighlighted){ currentHighlighted.classList.remove("speaking"); currentHighlighted = null; }
+    setHighlighted(null);
   }
 
-  function playSpeech(){
+  function audioSrcForSlide(idx){ return "audio/slide_" + pad2(idx) + ".m4a"; }
+
+  function playRecorded(){
+    var expectedSrc = audioSrcForSlide(currentSlide);
+    if (shadowAudio.src && shadowAudio.src.indexOf(expectedSrc) !== -1 && shadowAudio.currentTime > 0 && !shadowAudio.ended){
+      shadowAudio.playbackRate = parseFloat(rateSlider.value);
+      shadowAudio.play();
+      playBtn.innerHTML = "&#10074;&#10074;";
+      return;
+    }
+    shadowAudio.src = expectedSrc;
+    shadowAudio.playbackRate = parseFloat(rateSlider.value);
+    shadowAudio.currentTime = 0;
+    shadowAudio.play().then(function(){
+      playBtn.innerHTML = "&#10074;&#10074;";
+    }).catch(function(err){
+      alert("音声の再生に失敗しました: " + err);
+    });
+  }
+
+  function playTTS(){
     if (!("speechSynthesis" in window)){
       alert("お使いのブラウザは読み上げ（Web Speech API）に対応していません。");
       return;
@@ -692,9 +861,7 @@
       playBtn.innerHTML = "&#10074;&#10074;";
       return;
     }
-    if (!ttsFullText){
-      return;
-    }
+    if (!ttsFullText) return;
     speechSynthesis.cancel();
     var utt = new SpeechSynthesisUtterance(ttsFullText);
     utt.lang = "en-US";
@@ -707,17 +874,34 @@
     utt.onend = function(){
       playBtn.innerHTML = "&#9658;";
       isPaused = false;
-      if (currentHighlighted){ currentHighlighted.classList.remove("speaking"); currentHighlighted = null; }
+      setHighlighted(null);
     };
     currentUtterance = utt;
     speechSynthesis.speak(utt);
     playBtn.innerHTML = "&#10074;&#10074;";
   }
 
+  function playSpeech(){
+    if (voiceSource === "recorded") playRecorded();
+    else playTTS();
+  }
+
+  shadowAudio.addEventListener("timeupdate", function(){
+    if (voiceSource === "recorded") highlightByTime(shadowAudio.currentTime);
+  });
+  shadowAudio.addEventListener("ended", function(){
+    playBtn.innerHTML = "&#9658;";
+    setHighlighted(null);
+  });
+
   playBtn.addEventListener("click", function(){
-    if ("speechSynthesis" in window && speechSynthesis.speaking && !speechSynthesis.paused){
-      speechSynthesis.pause();
-      isPaused = true;
+    if (isCurrentlyPlaying()){
+      if (voiceSource === "recorded"){
+        shadowAudio.pause();
+      } else {
+        speechSynthesis.pause();
+        isPaused = true;
+      }
       playBtn.innerHTML = "&#9658;";
     } else {
       playSpeech();
@@ -726,6 +910,7 @@
   stopBtn.addEventListener("click", stopSpeech);
   rateSlider.addEventListener("input", function(){
     ttsRateLabel.textContent = parseFloat(rateSlider.value).toFixed(2) + "x";
+    if (voiceSource === "recorded") shadowAudio.playbackRate = parseFloat(rateSlider.value);
     try { localStorage.setItem("aogs_rate", rateSlider.value); } catch(e){}
   });
   (function restoreRate(){
@@ -733,6 +918,154 @@
     if (r){ rateSlider.value = r; }
     ttsRateLabel.textContent = parseFloat(rateSlider.value).toFixed(2) + "x";
   })();
+
+  function setVoiceSource(src){
+    voiceSource = src;
+    voiceRecordedRadio.checked = (src === "recorded");
+    voiceTTSRadio.checked = (src === "tts");
+    voiceSourceBadge.textContent = (src === "recorded") ? "\u{1F3A7} 録音音声" : "\u{1F5E3} TTS";
+    try { localStorage.setItem("aogs_voice_source", src); } catch(e){}
+  }
+  voiceRecordedRadio.addEventListener("change", function(){ stopSpeech(); setVoiceSource("recorded"); });
+  voiceTTSRadio.addEventListener("change", function(){ stopSpeech(); setVoiceSource("tts"); });
+  (function restoreVoiceSource(){
+    var v = localStorage.getItem("aogs_voice_source") || "recorded";
+    setVoiceSource(v);
+  })();
+
+  fetch("audio/word_times.json", {cache: "no-store"})
+    .then(function(res){ return res.json(); })
+    .then(function(data){
+      wordTimesData = data;
+      currentWordTimes = wordTimesData[String(currentSlide)] || [];
+    })
+    .catch(function(){});
+
+  // ---------- pronunciation check mode ----------
+  var pronCheckCheckbox = document.getElementById("pronCheckCheckbox");
+  var pronCheckActive = false;
+  var pronProgress = 0;
+  var recognition = null;
+
+  function normWord(s){ return (s || "").toLowerCase().replace(/[^a-z']/g, ""); }
+
+  function insertPronBanner(){
+    if (manuscriptEl.querySelector("#pronBanner")) return;
+    var banner = document.createElement("div");
+    banner.id = "pronBanner";
+    banner.innerHTML = '<span class="dot"></span><span>発音確認モード中 — 原稿を声に出して読んでみてください</span>';
+    manuscriptEl.insertBefore(banner, manuscriptEl.firstChild);
+  }
+
+  function resetPronProgress(){
+    pronProgress = 0;
+    wordSpans.forEach(function(w){ w.el.classList.remove("confirmed"); });
+  }
+
+  function processRecognized(text){
+    var heard = normWord(text).length ? text.toLowerCase().split(/\s+/).map(normWord).filter(Boolean) : [];
+    var lookahead = 4;
+    heard.forEach(function(hw){
+      if (!hw || pronProgress >= wordSpans.length) return;
+      for (var k = 0; k < lookahead && pronProgress + k < wordSpans.length; k++){
+        var target = normWord(wordSpans[pronProgress + k].el.textContent);
+        if (target && (target === hw || target.indexOf(hw) === 0 || hw.indexOf(target) === 0)){
+          for (var m = 0; m <= k; m++){
+            wordSpans[pronProgress + m].el.classList.add("confirmed");
+          }
+          pronProgress += k + 1;
+          break;
+        }
+      }
+    });
+  }
+
+  function startPronCheck(){
+    var SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SR){
+      alert("お使いのブラウザは音声認識に対応していません。Chrome等でお試しください。");
+      pronCheckCheckbox.checked = false;
+      return;
+    }
+    resetPronProgress();
+    insertPronBanner();
+    recognition = new SR();
+    recognition.lang = "en-US";
+    recognition.continuous = true;
+    recognition.interimResults = true;
+    recognition.onresult = function(event){
+      for (var i = event.resultIndex; i < event.results.length; i++){
+        if (event.results[i].isFinal) processRecognized(event.results[i][0].transcript);
+      }
+    };
+    recognition.onerror = function(e){ console.warn("speech recognition error", e.error); };
+    recognition.onend = function(){
+      if (pronCheckActive){ try { recognition.start(); } catch(e){} }
+    };
+    pronCheckActive = true;
+    try { recognition.start(); } catch(e){}
+  }
+
+  function stopPronCheck(){
+    pronCheckActive = false;
+    if (recognition){ try { recognition.stop(); } catch(e){} recognition = null; }
+    var banner = manuscriptEl.querySelector("#pronBanner");
+    if (banner) banner.remove();
+    wordSpans.forEach(function(w){ w.el.classList.remove("confirmed"); });
+  }
+
+  pronCheckCheckbox.addEventListener("change", function(){
+    if (pronCheckCheckbox.checked) startPronCheck();
+    else stopPronCheck();
+  });
+
+  // ---------- stopwatch ----------
+  var swDisplay = document.getElementById("swDisplay");
+  var swStartBtn = document.getElementById("swStartBtn");
+  var swResetBtn = document.getElementById("swResetBtn");
+  var swElapsed = 0;
+  var swStartTs = null;
+  var swRunning = false;
+  var swInterval = null;
+
+  function swFormat(ms){
+    var cs = Math.floor(ms / 10);
+    var mm = Math.floor(cs / 6000);
+    var ss = Math.floor((cs % 6000) / 100);
+    var cc = cs % 100;
+    function p(n){ n = String(n); return n.length < 2 ? "0" + n : n; }
+    return p(mm) + ":" + p(ss) + "." + p(cc);
+  }
+  function swTick(){
+    swDisplay.textContent = swFormat(swElapsed + (Date.now() - swStartTs));
+  }
+  function swStart(){
+    if (swRunning) return;
+    swRunning = true;
+    swStartTs = Date.now();
+    swInterval = setInterval(swTick, 50);
+    swStartBtn.textContent = "一時停止";
+    swStartBtn.classList.add("running");
+  }
+  function swPause(){
+    if (!swRunning) return;
+    swRunning = false;
+    swElapsed += Date.now() - swStartTs;
+    clearInterval(swInterval);
+    swStartBtn.textContent = "再開";
+    swStartBtn.classList.remove("running");
+  }
+  function swReset(){
+    swRunning = false;
+    clearInterval(swInterval);
+    swElapsed = 0;
+    swStartTs = null;
+    swDisplay.textContent = swFormat(0);
+    swStartBtn.textContent = "スタート";
+    swStartBtn.classList.remove("running");
+  }
+  swStartBtn.addEventListener("click", function(){ if (swRunning) swPause(); else swStart(); });
+  swResetBtn.addEventListener("click", swReset);
 
   // ---------- syncStatus toast ----------
   var syncStatus = document.getElementById("syncStatus");
