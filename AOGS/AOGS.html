@@ -124,6 +124,24 @@
     backdrop-filter:blur(4px);
     z-index:5;
   }
+  #playAllBtn{
+    position:absolute;
+    top:calc(var(--safe-top) + 8px);
+    right:54px;
+    width:38px;
+    height:38px;
+    border-radius:50%;
+    border:none;
+    background:rgba(15,20,28,.55);
+    color:#fff;
+    font-size:15px;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    backdrop-filter:blur(4px);
+    z-index:5;
+  }
+  #playAllBtn.active{ background:var(--blue); }
 
   /* ---------- TTS bar ---------- */
   #ttsBar{
@@ -179,26 +197,33 @@
     position:relative;
     display:inline-block;
     white-space:nowrap;
+    line-height:1.15;
   }
   .kana{
     position:absolute;
     left:50%;
-    bottom:100%;
+    bottom:calc(100% + 2px);
     transform:translateX(-50%);
     font-size:.52em;
     color:var(--accent);
     white-space:nowrap;
     display:none;
-    line-height:1.2;
+    line-height:1.15;
     pointer-events:none;
   }
   body.show-kana .kana{ display:block; }
-  body.show-kana #manuscript{ line-height:2.5; }
+  body.show-aogs-kana .kana.special{ display:block; }
+  body.show-kana #manuscript, body.show-aogs-kana #manuscript{ line-height:2.5; }
   .word{
     border-radius:4px;
     padding:0 1px;
+    line-height:1.15;
   }
   .word.marked{
+    background:var(--mark);
+    color:var(--mark-text);
+  }
+  body.show-aogs-kana .word.auto-marked{
     background:var(--mark);
     color:var(--mark-text);
   }
@@ -389,6 +414,7 @@
     <div class="nav-zone right" id="zoneRight">&#10095;</div>
     <div id="progressBar"></div>
     <div id="slideCounter">1 / 1</div>
+    <button id="playAllBtn" aria-label="全スライド再生">&#9658;</button>
     <button id="settingsBtn" aria-label="設定">&#9881;</button>
   </div>
 
@@ -436,6 +462,14 @@
       <label for="kanaCheck" style="margin:0;">発音（カタカナ）を表示する</label>
     </div>
     <div class="setting-hint">単語の上に読み方の目安をカタカナで表示します。</div>
+  </div>
+
+  <div class="setting-row">
+    <div class="check-row">
+      <input type="checkbox" id="aogsKanaCheck" />
+      <label for="aogsKanaCheck" style="margin:0;">AOGS用のカタカナ発音を表示</label>
+    </div>
+    <div class="setting-hint">発表直前まで言い方があいまいだった単語だけ、カタカナ発音とマーカーを表示します。</div>
   </div>
 
   <div class="setting-row">
@@ -537,8 +571,15 @@
     "assessment":"アセスメント","changes":"チェンジズ","entering":"エンタリング","floating":"フローティング",
     "debris":"デブリ","cars":"カーズ","trees":"トゥリーズ","development":"ディベロップメント",
     "wider":"ワイダー","range":"レンジ","concludes":"コンクルーズ","top-right":"トップ・ライト",
-    "bottom-right":"ボトム・ライト","left":"レフト","right":"ライト"
+    "bottom-right":"ボトム・ライト","left":"レフト","right":"ライト",
+    "treated":"トリーティッド","own":"オウン"
   };
+
+  var AOGS_SPECIAL_WORDS = new Set([
+    "occurred","predict","investigating","inundated","divides","treats","weight","treated",
+    "governing","momentum","continuity","shrine","northern","own","comparison","slower",
+    "swirls","comparing","collapse","debris"
+  ]);
 
   var BREAK_WORDS = new Set(["and","but","because","which","so","since","while","when","if","or","that","then"]);
 
@@ -616,15 +657,16 @@
 
         var key = cleanKey(tok);
         var kanaText = KATAKANA[key];
+        var isSpecial = AOGS_SPECIAL_WORDS.has(key);
         if (kanaText){
           var kana = document.createElement("span");
-          kana.className = "kana";
+          kana.className = "kana" + (isSpecial ? " special" : "");
           kana.textContent = kanaText;
           wrap.appendChild(kana);
         }
 
         var wspan = document.createElement("span");
-        wspan.className = "word";
+        wspan.className = "word" + (isSpecial ? " auto-marked" : "");
         wspan.textContent = tok;
         var wordKey = idx + ":" + pIdx + ":" + tIdx;
         wspan.dataset.key = wordKey;
@@ -669,8 +711,8 @@
     manuscriptEl.scrollTop = 0;
     try { localStorage.setItem("aogs_last_slide", String(idx)); } catch(e){}
   }
-  function nextSlide(){ showSlide(currentSlide + 1); }
-  function prevSlide(){ showSlide(currentSlide - 1); }
+  function nextSlide(){ stopPlayAll(); showSlide(currentSlide + 1); }
+  function prevSlide(){ stopPlayAll(); showSlide(currentSlide - 1); }
 
   // ---------- swipe handling ----------
   var slideArea = document.getElementById("slideArea");
@@ -741,6 +783,13 @@
     try { localStorage.setItem("aogs_kana", kanaCheck.checked ? "1" : "0"); } catch(e){}
   });
 
+  // AOGS-specific kana toggle
+  var aogsKanaCheck = document.getElementById("aogsKanaCheck");
+  aogsKanaCheck.addEventListener("change", function(){
+    document.body.classList.toggle("show-aogs-kana", aogsKanaCheck.checked);
+    try { localStorage.setItem("aogs_aogs_kana", aogsKanaCheck.checked ? "1" : "0"); } catch(e){}
+  });
+
   // clear marks
   document.getElementById("clearMarksBtn").addEventListener("click", function(){
     markedWords.clear();
@@ -758,6 +807,9 @@
     var kana = localStorage.getItem("aogs_kana") === "1";
     kanaCheck.checked = kana;
     document.body.classList.toggle("show-kana", kana);
+    var aogsKana = localStorage.getItem("aogs_aogs_kana") === "1";
+    aogsKanaCheck.checked = aogsKana;
+    document.body.classList.toggle("show-aogs-kana", aogsKana);
   })();
 
   // ---------- shadowing playback: TTS or recorded audio ----------
@@ -892,6 +944,14 @@
   shadowAudio.addEventListener("ended", function(){
     playBtn.innerHTML = "&#9658;";
     setHighlighted(null);
+    if (playAllActive){
+      if (currentSlide < TOTAL_SLIDES - 1){
+        showSlide(currentSlide + 1);
+        playRecorded();
+      } else {
+        stopPlayAll();
+      }
+    }
   });
 
   playBtn.addEventListener("click", function(){
@@ -907,7 +967,40 @@
       playSpeech();
     }
   });
-  stopBtn.addEventListener("click", stopSpeech);
+  stopBtn.addEventListener("click", function(){ stopPlayAll(); stopSpeech(); });
+
+  // ---------- play all slides ----------
+  var playAllBtn = document.getElementById("playAllBtn");
+  var playAllActive = false;
+  var voiceSourceBeforePlayAll = null;
+
+  function stopPlayAll(){
+    if (!playAllActive) return;
+    playAllActive = false;
+    playAllBtn.classList.remove("active");
+    playAllBtn.innerHTML = "&#9658;";
+    if (voiceSourceBeforePlayAll !== null){
+      voiceSource = voiceSourceBeforePlayAll;
+      voiceSourceBeforePlayAll = null;
+    }
+  }
+  function startPlayAll(){
+    voiceSourceBeforePlayAll = voiceSource;
+    voiceSource = "recorded";
+    playAllActive = true;
+    playAllBtn.classList.add("active");
+    playAllBtn.innerHTML = "&#9632;";
+    showSlide(0);
+    playRecorded();
+  }
+  playAllBtn.addEventListener("click", function(){
+    if (playAllActive){
+      stopPlayAll();
+      stopSpeech();
+    } else {
+      startPlayAll();
+    }
+  });
   rateSlider.addEventListener("input", function(){
     ttsRateLabel.textContent = parseFloat(rateSlider.value).toFixed(2) + "x";
     if (voiceSource === "recorded") shadowAudio.playbackRate = parseFloat(rateSlider.value);
@@ -926,8 +1019,8 @@
     voiceSourceBadge.textContent = (src === "recorded") ? "\u{1F3A7} 録音音声" : "\u{1F5E3} TTS";
     try { localStorage.setItem("aogs_voice_source", src); } catch(e){}
   }
-  voiceRecordedRadio.addEventListener("change", function(){ stopSpeech(); setVoiceSource("recorded"); });
-  voiceTTSRadio.addEventListener("change", function(){ stopSpeech(); setVoiceSource("tts"); });
+  voiceRecordedRadio.addEventListener("change", function(){ stopPlayAll(); stopSpeech(); setVoiceSource("recorded"); });
+  voiceTTSRadio.addEventListener("change", function(){ stopPlayAll(); stopSpeech(); setVoiceSource("tts"); });
   (function restoreVoiceSource(){
     var v = localStorage.getItem("aogs_voice_source") || "recorded";
     setVoiceSource(v);

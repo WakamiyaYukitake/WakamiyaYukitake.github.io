@@ -67,7 +67,7 @@ We ran the analysis twice: once without buildings, and once with buildings.
 
 15
 We converted the 3D city model, with and without buildings, from CityGML format to STL format, using Unity and Blender.
-Then, using a new particle-inflow program, we ran the DSPH analysis for about 8.5 hours, to get the flood behavior and velocity of each particle.
+Then, using a new particle-inflow program, we ran the DSPH analysis for about 44 hours, to get the flood behavior and velocity of each particle.
 After that, an additional program calculated the flood depth and the forces on buildings from these results, over several hours.
 Finally, we visualized the results using ParaView.
 
