@@ -1,0 +1,140 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,maximum-scale=1" />
+  <title>PINT — 行動ログ地図</title>
+  <meta name="description" content="GPSで訪れた場所をメッシュ単位で塗りつぶしていく行動ログ地図。" />
+  <meta name="theme-color" content="#12161c" />
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div id="app">
+    <header id="topbar">
+      <div class="brand">PINT</div>
+      <div class="status">
+        <div id="status-main">準備中…</div>
+        <div id="status-sub" class="sub">現在地は未取得</div>
+      </div>
+      <button id="btn-settings" class="icon-btn" aria-label="設定を開く">⚙</button>
+    </header>
+
+    <div id="map"></div>
+
+    <div id="legend" class="legend" hidden>
+      <span class="legend-label">少</span>
+      <div id="legend-scale" class="legend-scale"></div>
+      <span class="legend-label">多</span>
+    </div>
+
+    <footer id="bottombar">
+      <button id="btn-auto" class="bar-btn" aria-pressed="false">
+        <span class="bar-icon">⏱</span><span class="bar-text">自動記録</span>
+      </button>
+      <button id="btn-record" class="bar-btn primary">
+        <span class="bar-icon">◉</span><span class="bar-text">今すぐ記録</span>
+      </button>
+      <button id="btn-mode" class="bar-btn">
+        <span class="bar-icon">🗺</span><span class="bar-text">色塗り</span>
+      </button>
+      <button id="btn-locate" class="bar-btn">
+        <span class="bar-icon">◎</span><span class="bar-text">現在地</span>
+      </button>
+    </footer>
+  </div>
+
+  <div id="sheet-backdrop" class="backdrop" hidden></div>
+  <section id="sheet" class="sheet" hidden aria-label="設定">
+    <div class="sheet-head">
+      <h2>設定</h2>
+      <button id="btn-close" class="icon-btn" aria-label="閉じる">×</button>
+    </div>
+
+    <div class="sheet-body">
+      <section class="group">
+        <h3>記録</h3>
+        <label class="row">
+          <span>更新間隔</span>
+          <select id="opt-interval">
+            <option value="1">1分ごと</option>
+            <option value="5">5分ごと</option>
+            <option value="15">15分ごと</option>
+            <option value="60">1時間ごと</option>
+          </select>
+        </label>
+        <label class="row">
+          <span>メッシュサイズ</span>
+          <select id="opt-grid">
+            <option value="50">約50m</option>
+            <option value="100">約100m</option>
+            <option value="250">約250m</option>
+            <option value="500">約500m</option>
+          </select>
+        </label>
+        <label class="row">
+          <span>画面を消灯させない</span>
+          <input type="checkbox" id="opt-awake" />
+        </label>
+        <label class="row">
+          <span>現在地を追従する</span>
+          <input type="checkbox" id="opt-follow" />
+        </label>
+        <p class="note">
+          ブラウザはアプリを閉じている間にGPSを取得できません。記録されるのは
+          <strong>この画面を開いている間</strong>だけです。長時間ためたいときは
+          「画面を消灯させない」をONにして開いたままにしてください。
+        </p>
+      </section>
+
+      <section class="group">
+        <h3>記録の状況</h3>
+        <dl class="stats">
+          <div><dt>訪れたメッシュ</dt><dd id="stat-cells">0</dd></div>
+          <div><dt>のべ記録回数</dt><dd id="stat-visits">0</dd></div>
+          <div><dt>最高レベル</dt><dd id="stat-max">0</dd></div>
+        </dl>
+        <p class="note">
+          保存しているのは測位1回ごとの記録で、メッシュとレベルはそこから毎回計算しています。
+          メッシュサイズを変えても同じ履歴を塗り直すだけなので、記録が消えることはありません。
+        </p>
+      </section>
+
+      <section class="group">
+        <h3>データ</h3>
+        <div class="btn-row">
+          <button id="btn-export" class="btn">バックアップ (JSON)</button>
+          <button id="btn-export-txt" class="btn">メッシュ一覧 (id:lv)</button>
+          <button id="btn-import" class="btn">読み込み</button>
+          <button id="btn-clear" class="btn danger">全消去</button>
+        </div>
+        <input type="file" id="file-import" accept="application/json,.json" hidden />
+        <p class="note">
+          データはこの端末のブラウザ内（localStorage）に保存されています。
+          機種変更や履歴の削除で消えるので、ときどきバックアップしてください。<br />
+          ユーザーID: <code id="user-id">-</code><br />
+          クラウド同期（GAS＋スプレッドシート）は次のフェーズで追加します。未送信ぶんの記録は
+          <span id="pending-count">0</span> 件たまっています。
+        </p>
+      </section>
+
+      <section class="group">
+        <h3>PINTについて</h3>
+        <p class="note">
+          地図を等分割したメッシュに区切り、そこで測位されるたびにレベルが1上がります。
+          「色塗り」ではレベルが高いほど濃い色に、「開拓」では訪れたところだけ航空写真が現れます。<br />
+          地図・写真：<a href="https://maps.gsi.go.jp/development/ichiran.html" target="_blank" rel="noopener">国土地理院タイル</a>
+        </p>
+      </section>
+    </div>
+  </section>
+
+  <div id="toast" class="toast" hidden></div>
+
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script src="mesh.js"></script>
+  <script src="store.js"></script>
+  <script src="layers.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>

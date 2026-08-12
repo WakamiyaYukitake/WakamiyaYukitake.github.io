@@ -1,0 +1,252 @@
+/* PINT — 行動ログ地図 */
+:root {
+  --bg: #12161c;
+  --panel: #1b212b;
+  --panel-2: #232b38;
+  --line: #313b4a;
+  --text: #e9edf3;
+  --muted: #97a3b6;
+  --accent: #ff8a3d;
+  --accent-2: #3ea6ff;
+  --danger: #ff6b6b;
+  --bar-h: 62px;
+}
+
+* { box-sizing: border-box; }
+
+html, body {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+  background: var(--bg);
+  color: var(--text);
+  font-family: -apple-system, BlinkMacSystemFont, "Hiragino Kaku Gothic ProN",
+               "Noto Sans JP", "Segoe UI", Roboto, sans-serif;
+  overscroll-behavior: none;
+}
+
+#app {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  /* 100dvh を後に置く。対応ブラウザではアドレスバーを除いた高さが使われ、
+     下のバーがブラウザUIの裏に隠れない（AOGSページと同じ対処）。 */
+  height: 100vh;
+  height: 100dvh;
+}
+
+/* ---------- 上部バー ---------- */
+#topbar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px;
+  padding-top: calc(10px + env(safe-area-inset-top));
+  background: var(--panel);
+  border-bottom: 1px solid var(--line);
+  z-index: 1000;
+}
+
+.brand {
+  font-weight: 800;
+  letter-spacing: 0.14em;
+  font-size: 18px;
+  color: var(--accent);
+}
+
+#topbar .status { flex: 1; min-width: 0; }
+#status-main {
+  font-size: 14px;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.sub { font-size: 11px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+.icon-btn {
+  flex: none;
+  width: 38px;
+  height: 38px;
+  border-radius: 10px;
+  border: 1px solid var(--line);
+  background: var(--panel-2);
+  color: var(--text);
+  font-size: 18px;
+  line-height: 1;
+  cursor: pointer;
+}
+.icon-btn:active { background: var(--line); }
+
+/* ---------- 地図 ---------- */
+#map { flex: 1; min-height: 0; background: #0d1116; }
+.leaflet-container { background: #0d1116; font: inherit; }
+.leaflet-control-attribution { font-size: 10px; }
+canvas.pint-tile { image-rendering: auto; }
+
+.pint-here {
+  width: 16px;
+  height: 16px;
+  margin: -8px 0 0 -8px;
+  border-radius: 50%;
+  background: var(--accent-2);
+  border: 2px solid #fff;
+  box-shadow: 0 0 0 4px rgba(62, 166, 255, 0.28);
+}
+
+/* ---------- 凡例 ---------- */
+.legend {
+  position: absolute;
+  left: 10px;
+  bottom: calc(var(--bar-h) + env(safe-area-inset-bottom) + 12px);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 8px;
+  border-radius: 10px;
+  background: rgba(27, 33, 43, 0.88);
+  border: 1px solid var(--line);
+  z-index: 900;
+  pointer-events: none;
+}
+.legend-label { font-size: 10px; color: var(--muted); }
+.legend-scale { display: flex; border-radius: 3px; overflow: hidden; }
+.legend-scale i { display: block; width: 13px; height: 10px; }
+
+/* ---------- 下部バー ---------- */
+#bottombar {
+  display: flex;
+  height: var(--bar-h);
+  padding-bottom: env(safe-area-inset-bottom);
+  background: var(--panel);
+  border-top: 1px solid var(--line);
+  z-index: 1000;
+}
+
+.bar-btn {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  border: 0;
+  background: transparent;
+  color: var(--muted);
+  font-size: 11px;
+  cursor: pointer;
+}
+.bar-btn .bar-icon { font-size: 19px; line-height: 1; }
+.bar-btn:active { background: var(--panel-2); }
+.bar-btn.primary { color: var(--text); }
+.bar-btn.primary .bar-icon { color: var(--accent); }
+.bar-btn[aria-pressed="true"] { color: var(--accent); }
+.bar-btn:disabled { opacity: 0.45; }
+
+/* ---------- 設定シート ---------- */
+.backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  z-index: 1500;
+}
+
+.sheet {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  max-height: 86vh;
+  max-height: 86dvh;
+  display: flex;
+  flex-direction: column;
+  background: var(--panel);
+  border-top: 1px solid var(--line);
+  border-radius: 16px 16px 0 0;
+  z-index: 1600;
+}
+.sheet[hidden] { display: none; }
+
+.sheet-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 14px;
+  border-bottom: 1px solid var(--line);
+}
+.sheet-head h2 { margin: 0; font-size: 16px; }
+
+.sheet-body {
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  padding: 4px 14px calc(20px + env(safe-area-inset-bottom));
+}
+
+.group { padding: 14px 0; border-bottom: 1px solid var(--line); }
+.group:last-child { border-bottom: 0; }
+.group h3 { margin: 0 0 10px; font-size: 13px; color: var(--accent); letter-spacing: 0.04em; }
+
+.row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 9px 0;
+  font-size: 14px;
+}
+.row select {
+  background: var(--panel-2);
+  color: var(--text);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 7px 9px;
+  font-size: 14px;
+}
+.row input[type="checkbox"] { width: 20px; height: 20px; accent-color: var(--accent); }
+
+.note { margin: 8px 0 0; font-size: 12px; line-height: 1.65; color: var(--muted); }
+.note code { background: var(--panel-2); padding: 1px 5px; border-radius: 4px; }
+.note a { color: var(--accent-2); }
+
+.stats { display: flex; gap: 10px; margin: 0; }
+.stats > div {
+  flex: 1;
+  background: var(--panel-2);
+  border-radius: 10px;
+  padding: 10px;
+  text-align: center;
+}
+.stats dt { font-size: 11px; color: var(--muted); }
+.stats dd { margin: 4px 0 0; font-size: 20px; font-weight: 700; font-variant-numeric: tabular-nums; }
+
+.btn-row { display: flex; flex-wrap: wrap; gap: 8px; }
+.btn {
+  flex: 1 1 45%;
+  padding: 10px;
+  border-radius: 9px;
+  border: 1px solid var(--line);
+  background: var(--panel-2);
+  color: var(--text);
+  font-size: 13px;
+  cursor: pointer;
+}
+.btn:active { background: var(--line); }
+.btn.danger { color: var(--danger); border-color: rgba(255, 107, 107, 0.4); }
+
+/* ---------- トースト ---------- */
+.toast {
+  position: fixed;
+  left: 50%;
+  transform: translateX(-50%);
+  bottom: calc(var(--bar-h) + env(safe-area-inset-bottom) + 20px);
+  max-width: 88vw;
+  padding: 10px 16px;
+  border-radius: 999px;
+  background: rgba(35, 43, 56, 0.96);
+  border: 1px solid var(--line);
+  font-size: 13px;
+  text-align: center;
+  z-index: 2000;
+}
+.toast[hidden] { display: none; }
