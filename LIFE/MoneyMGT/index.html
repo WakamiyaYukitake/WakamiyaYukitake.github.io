@@ -1,0 +1,110 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,maximum-scale=1" />
+  <title>MoneyMGT — お金の管理</title>
+  <meta name="description" content="複数口座の残高・入出金・払い戻し・収入予定・サブスクを管理し、将来の貯金額をシミュレーションするアプリ。" />
+  <meta name="theme-color" content="#12161c" />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div id="app">
+    <header id="topbar">
+      <div class="brand">MoneyMGT</div>
+      <div class="status">
+        <div id="status-main">読み込み中…</div>
+        <div id="status-sub" class="sub">&nbsp;</div>
+      </div>
+      <button id="btn-settings" class="icon-btn" aria-label="設定を開く">⚙</button>
+    </header>
+
+    <main id="views">
+      <!-- 概要（口座残高＋シミュレーション） -->
+      <section id="view-overview" class="view">
+        <div id="ov-total" class="hero-card"></div>
+        <div id="ov-accounts" class="account-list"></div>
+
+        <section class="panel">
+          <div class="panel-head">
+            <h2>資産推移シミュレーション</h2>
+          </div>
+          <div id="sim-chips" class="chip-row"></div>
+          <div id="sim-chart" class="chart-wrap"></div>
+          <div id="sim-stats" class="stat-row"></div>
+          <div class="panel-sub">
+            <h3>この日の予測残高</h3>
+            <div class="row row-input">
+              <input type="date" id="sim-date-input" />
+              <button id="sim-date-btn" class="btn small">計算</button>
+            </div>
+            <div id="sim-date-result" class="note"></div>
+          </div>
+          <div class="panel-sub">
+            <h3>今後の入出金予定</h3>
+            <div id="sim-events" class="event-list"></div>
+          </div>
+        </section>
+      </section>
+
+      <!-- 入出（取引・払い戻し） -->
+      <section id="view-ledger" class="view" hidden>
+        <div class="segment" id="ledger-tabs">
+          <button class="segment-btn active" data-ledger-tab="tx">取引</button>
+          <button class="segment-btn" data-ledger-tab="refund">払い戻し</button>
+        </div>
+        <div id="ledger-tx" class="tab-body">
+          <div id="tx-list" class="entry-list"></div>
+        </div>
+        <div id="ledger-refund" class="tab-body" hidden>
+          <div id="refund-list" class="entry-list"></div>
+        </div>
+      </section>
+
+      <!-- 収入予定 -->
+      <section id="view-earnings" class="view" hidden>
+        <p class="note intro">「稼いだ／稼ぐ予定」を先に登録しておき、実際に振り込まれたら「入金済み」にできます。</p>
+        <div id="earnings-list" class="entry-list"></div>
+      </section>
+
+      <!-- サブスク -->
+      <section id="view-subs" class="view" hidden>
+        <p class="note intro">有効なサブスクは毎月の請求日に自動でシミュレーションへ反映されます（履歴として個別入力する必要はありません）。</p>
+        <div id="subs-total" class="hero-card small"></div>
+        <div id="subs-list" class="entry-list"></div>
+      </section>
+    </main>
+
+    <footer id="bottombar">
+      <button class="bar-btn active" data-view="overview">
+        <span class="bar-icon">💰</span><span class="bar-text">概要</span>
+      </button>
+      <button class="bar-btn" data-view="ledger">
+        <span class="bar-icon">📝</span><span class="bar-text">入出</span>
+      </button>
+      <button class="bar-btn" data-view="earnings">
+        <span class="bar-icon">📅</span><span class="bar-text">収入予定</span>
+      </button>
+      <button class="bar-btn" data-view="subs">
+        <span class="bar-icon">🔁</span><span class="bar-text">サブスク</span>
+      </button>
+    </footer>
+
+    <button id="btn-fab" class="fab" aria-label="追加">＋</button>
+  </div>
+
+  <div id="sheet-backdrop" class="backdrop" hidden></div>
+  <section id="sheet" class="sheet" hidden>
+    <div class="sheet-head">
+      <h2 id="sheet-title">タイトル</h2>
+      <button id="btn-sheet-close" class="icon-btn" aria-label="閉じる">×</button>
+    </div>
+    <div class="sheet-body" id="sheet-body"></div>
+  </section>
+
+  <div id="toast" class="toast" hidden></div>
+
+  <script src="store.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
