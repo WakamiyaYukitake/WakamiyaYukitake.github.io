@@ -9,7 +9,7 @@
  *   userId: "u-xxxxxxxx",
  *   updatedAt: ts,
  *   accounts:      [{ id, name, purpose, baseBalance, baseDate, order, archived }],
- *   cards:         [{ id, accountId, name, note, order, archived,
+ *   cards:         [{ id, accountId, name, note, order, archived, cardType:'credit'|'debit',
  *                      closingDay, paymentDay, paymentMonthOffset }],
  *   transactions:  [{ id, type:'expense'|'income', status:'planned'|'confirmed',
  *                      date, settleDate, accountId, cardId, amount, title, note, createdAt }],
@@ -26,6 +26,8 @@
  * クレジットカードのルールをそのまま持たせる。closingDay=31 は「月末締め」の意味で、
  * その月の実際の日数にクランプする（addMonthsClamped と同じやり方）。
  * このカード情報から、取引の実際の口座引き落とし日（settleDate）を自動計算する。
+ * cardType==='debit'（デビットカード）はこの締め日ルールを使わず、常に支払った翌日に
+ * 引き落とされるものとして扱う。
  */
 (function (global) {
   'use strict';
@@ -112,15 +114,37 @@
   }
 
   /* カードの締め日・支払日から、購入日 purchaseDate の実際の口座引き落とし日を計算する。
-   * card が無ければ即日決済（purchaseDate をそのまま返す）。 */
+   * card が無ければ即日決済（purchaseDate をそのまま返す）。
+   * デビットカードは締め日・支払日を持たず、常に翌日引き落としとして扱う。 */
   function computeCardSettleDate(purchaseDate, card) {
     if (!card) return purchaseDate;
+    if (card.cardType === 'debit') return addDays(purchaseDate, 1);
     var closingDay = card.closingDay || 31;
     var effectiveClosing = Math.min(closingDay, daysInMonth(purchaseDate));
     var day = parseDate(purchaseDate).getDate();
     var cycleBase = day > effectiveClosing ? addMonthsClamped(purchaseDate, 1, 1) : purchaseDate;
     var offset = card.paymentMonthOffset != null ? card.paymentMonthOffset : 1;
     return addMonthsClamped(cycleBase, offset, card.paymentDay || 27);
+  }
+
+  /* サブスク sub の請求日のうち、実際の引き落とし日（card 経由）が [start, end] に入るものを
+   * 全て返す（同じ月内で重複しないよう settle 日付でユニーク化）。monthEvents / cardMonthlyTotals で共用。 */
+  function subscriptionSettleDatesInRange(sub, card, start, end) {
+    var results = [];
+    var seen = {};
+    /* settle は charge と同じ月かそれより後にしかならないので、対象範囲より
+     * 最大4ヶ月前までの請求日候補を洗い出す（締め日ロールオーバー+1ヶ月、支払月オフセット最大+3ヶ月の目安）。 */
+    for (var back = 0; back <= 4; back++) {
+      var chargeMonth = addMonthsClamped(start, -back, 1);
+      var charge = addMonthsClamped(chargeMonth, 0, sub.billingDay);
+      if (cmpDate(charge, sub.startDate) < 0) continue;
+      var settle = computeCardSettleDate(charge, card);
+      if (cmpDate(settle, start) >= 0 && cmpDate(settle, end) <= 0 && !seen[settle]) {
+        seen[settle] = true;
+        results.push(settle);
+      }
+    }
+    return results;
   }
 
   /* ---------------- ストア本体 ---------------- */
@@ -212,6 +236,7 @@
         note: fields.note || '',
         order: this.data.cards.length,
         archived: false,
+        cardType: fields.cardType === 'debit' ? 'debit' : 'credit',
         closingDay: Math.min(31, Math.max(1, Number(fields.closingDay) || 31)),
         paymentDay: Math.min(31, Math.max(1, Number(fields.paymentDay) || 27)),
         paymentMonthOffset: fields.paymentMonthOffset != null ? Number(fields.paymentMonthOffset) : 1
@@ -225,6 +250,7 @@
       var card = this.getCard(id);
       if (!card) return null;
       Object.assign(card, fields);
+      if (fields.cardType != null) card.cardType = fields.cardType === 'debit' ? 'debit' : 'credit';
       if (fields.closingDay != null) card.closingDay = Math.min(31, Math.max(1, Number(fields.closingDay) || 31));
       if (fields.paymentDay != null) card.paymentDay = Math.min(31, Math.max(1, Number(fields.paymentDay) || 27));
       if (fields.paymentMonthOffset != null) card.paymentMonthOffset = Number(fields.paymentMonthOffset);
@@ -556,49 +582,6 @@
       return events;
     },
 
-    /* horizonDays 分のシミュレーション。日ごとの累計残高の折れ線用データを返す */
-    simulate: function (horizonDays) {
-      var today = todayStr();
-      var start = this.totalBalance(today);
-      var events = this.upcomingEvents(horizonDays);
-      var horizonEnd = addDays(today, horizonDays);
-
-      var points = [{ date: today, total: start }];
-      var running = start;
-      events.forEach(function (ev) {
-        running += ev.amount;
-        points.push({ date: ev.date, total: running });
-      });
-      if (points[points.length - 1].date !== horizonEnd) {
-        points.push({ date: horizonEnd, total: running });
-      }
-
-      var perAccountEnd = {};
-      this.activeAccounts().forEach(function (a) {
-        perAccountEnd[a.id] = null;
-      });
-      var self = this;
-      this.activeAccounts().forEach(function (a) {
-        var bal = self.accountBalance(a.id, today);
-        events.forEach(function (ev) {
-          if (ev.accountId === a.id) bal += ev.amount;
-        });
-        perAccountEnd[a.id] = bal;
-      });
-
-      var days = Math.max(1, daysBetween(today, horizonEnd));
-      return {
-        start: start,
-        end: running,
-        netChange: running - start,
-        dailyAverage: (running - start) / days,
-        points: points,
-        events: events,
-        perAccountEnd: perAccountEnd,
-        horizonEnd: horizonEnd
-      };
-    },
-
     /* 指定した月（year, month:1-12）に発生する入出金イベント一覧。
      * upcomingEvents と違って過去日も含む（カレンダー表示用）。 */
     monthEvents: function (year, month) {
@@ -655,43 +638,52 @@
       this.data.subscriptions.forEach(function (s) {
         if (!s.active) return;
         var card = s.cardId ? findCard(s.cardId) : null;
-        var seen = {};
-        /* 引き落とし（settle）は請求（charge）と同じ月かそれより後にしかならないので、
-         * 対象月より最大4ヶ月前までの請求日候補を洗い出し、引き落とし日がこの月に入るものだけ拾う
-         * （最大遅延の目安：締め日ロールオーバーで+1ヶ月、支払月オフセットで最大+3ヶ月）。 */
-        for (var back = 0; back <= 4; back++) {
-          var chargeMonth = addMonthsClamped(start, -back, 1);
-          var charge = addMonthsClamped(chargeMonth, 0, s.billingDay);
-          if (cmpDate(charge, s.startDate) < 0) continue;
-          var settle = computeCardSettleDate(charge, card);
-          if (cmpDate(settle, start) >= 0 && cmpDate(settle, end) <= 0 && !seen[settle]) {
-            seen[settle] = true;
-            events.push({
-              date: settle,
-              label: 'サブスク：' + s.name,
-              amount: -s.amount,
-              accountId: s.accountId,
-              kind: 'subscription'
-            });
-          }
-        }
+        subscriptionSettleDatesInRange(s, card, start, end).forEach(function (settle) {
+          events.push({
+            date: settle,
+            label: 'サブスク：' + s.name,
+            amount: -s.amount,
+            accountId: s.accountId,
+            kind: 'subscription'
+          });
+        });
       });
 
       events.sort(function (a, b) { return cmpDate(a.date, b.date); });
       return events;
     },
 
-    /* 特定の1日の予測残高（イベントをその日まで積算） */
-    balanceOnDate: function (dateStr) {
-      var today = todayStr();
-      if (cmpDate(dateStr, today) <= 0) return this.totalBalance(dateStr);
-      var horizon = daysBetween(today, dateStr);
-      var sim = this.simulate(horizon);
-      var total = sim.start;
-      sim.events.forEach(function (ev) {
-        if (cmpDate(ev.date, dateStr) <= 0) total += ev.amount;
+    /* year年month月に、各カードから実際に引き落とされる（決済される）合計金額。
+     * confirmed: 確定した取引＋有効なサブスクのみ。withPlanned: それに「予定」ステータスの
+     * 取引も加えた金額。 */
+    cardMonthlyTotals: function (year, month) {
+      var mm = pad2(month);
+      var start = year + '-' + mm + '-01';
+      var lastDay = new Date(year, month, 0).getDate();
+      var end = year + '-' + mm + '-' + pad2(lastDay);
+      var cards = this.data.cards;
+      var totals = {};
+      cards.forEach(function (c) { totals[c.id] = { confirmed: 0, planned: 0 }; });
+
+      this.data.transactions.forEach(function (t) {
+        if (!t.cardId || !totals[t.cardId]) return;
+        if (cmpDate(t.settleDate, start) < 0 || cmpDate(t.settleDate, end) > 0) return;
+        var amt = t.type === 'income' ? -t.amount : t.amount;
+        if (t.status === 'planned') totals[t.cardId].planned += amt;
+        else totals[t.cardId].confirmed += amt;
       });
-      return total;
+
+      this.data.subscriptions.forEach(function (s) {
+        if (!s.active || !s.cardId || !totals[s.cardId]) return;
+        var card = cards.filter(function (c) { return c.id === s.cardId; })[0] || null;
+        var occurrences = subscriptionSettleDatesInRange(s, card, start, end);
+        totals[s.cardId].confirmed += occurrences.length * s.amount;
+      });
+
+      return cards.filter(function (c) { return !c.archived; }).map(function (c) {
+        var t = totals[c.id];
+        return { cardId: c.id, name: c.name, confirmed: t.confirmed, withPlanned: t.confirmed + t.planned };
+      });
     },
 
     /* 特定の1日・特定の口座の残高（過去はそのまま実績、未来はその日までのイベントを積算） */

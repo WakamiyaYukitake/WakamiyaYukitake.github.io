@@ -5,26 +5,20 @@
   var S = MoneyStore.load();
   var U = MoneyStore.util;
 
-  var APP_VERSION = 'v1.2.0';
+  var APP_VERSION = 'v1.3.0';
   var ACCOUNT_COLORS = ['#3ea6ff', '#ff8a3d', '#4cd08a', '#c792ea', '#ffd166', '#ef476f'];
   /* 外貨サブスク用の概算レート（1通貨あたり円）。ユーザーが選んだときの初期値で、後から自由に編集できる。 */
   var FX_PRESETS = { JPY: 1, USD: 150, EUR: 160, GBP: 190, KRW: 0.11, CNY: 21, AUD: 100 };
   var PAYMENT_OFFSET_LABELS = ['当月', '翌月', '翌々月', '3ヶ月後'];
-  var HORIZON_CHIPS = [
-    { days: 30, label: '1ヶ月' },
-    { days: 90, label: '3ヶ月' },
-    { days: 180, label: '6ヶ月' },
-    { days: 365, label: '1年' }
-  ];
 
   var todayD = new Date();
   var state = {
     view: 'overview',
     ledgerTab: 'tx',
-    simHorizon: 90,
     calYear: todayD.getFullYear(),
     calMonth: todayD.getMonth() + 1, // 1-12
-    calSelected: U.todayStr()
+    calSelected: U.todayStr(),
+    cardTotalsMode: 'confirmed'
   };
 
   /* ---------------- 初回起動：口座の下地を用意 ---------------- */
@@ -79,6 +73,7 @@
   }
   function cardCycleLabel(c) {
     if (!c) return '';
+    if (c.cardType === 'debit') return 'デビット（翌日引き落とし）';
     var closing = c.closingDay >= 31 ? '月末' : c.closingDay + '日';
     var payment = c.paymentDay >= 31 ? '月末' : c.paymentDay + '日';
     var offsetLabel = PAYMENT_OFFSET_LABELS[c.paymentMonthOffset] || (c.paymentMonthOffset + 'ヶ月後');
@@ -212,40 +207,8 @@
       });
     });
 
-    renderSimChips();
-    renderSimulation();
-  }
-
-  function renderSimChips() {
-    $('sim-chips').innerHTML = HORIZON_CHIPS.map(function (c) {
-      var active = c.days === state.simHorizon ? ' active' : '';
-      return '<button class="chip' + active + '" data-days="' + c.days + '">' + c.label + '</button>';
-    }).join('');
-    $('sim-chips').querySelectorAll('.chip').forEach(function (btn) {
-      btn.addEventListener('click', function () {
-        state.simHorizon = Number(btn.getAttribute('data-days'));
-        renderSimChips();
-        renderSimulation();
-      });
-    });
-  }
-
-  function renderSimulation() {
-    var sim = S.simulate(state.simHorizon);
-
-    $('sim-chart').innerHTML = buildChartSvg(sim.points) +
-      '<div class="chart-tooltip" id="chart-tooltip" hidden></div>';
-    bindChartInteraction(sim.points);
-
-    var netClass = sim.netChange >= 0 ? 'pos' : 'neg';
-    $('sim-stats').innerHTML =
-      '<div><div class="stat-label">期間の増減</div><div class="stat-value ' + netClass + '">' + fmtYenSigned(sim.netChange) + '</div></div>' +
-      '<div><div class="stat-label">1日あたりの貯金ペース</div><div class="stat-value">' + fmtYenSigned(Math.round(sim.dailyAverage)) + '</div></div>' +
-      '<div><div class="stat-label">' + fmtDateShort(sim.horizonEnd) + ' の予測残高</div><div class="stat-value">' + fmtYen(sim.end) + '</div></div>';
-
-    if (!$('sim-date-input').value) $('sim-date-input').value = U.addDays(U.todayStr(), 30);
-
     renderCalendar();
+    renderCardTotals();
   }
 
   var KIND_COLOR = { income: '#4cd08a', expense: '#ff6b6b', refund: '#3ea6ff', earning: '#ffd166', subscription: '#ff8a3d' };
@@ -339,81 +302,28 @@
     state.calYear = y;
     state.calMonth = m;
     renderCalendar();
+    renderCardTotals();
   }
 
-  $('sim-date-btn').addEventListener('click', function () {
-    var d = $('sim-date-input').value;
-    if (!d) return;
-    var bal = S.balanceOnDate(d);
-    $('sim-date-result').textContent = fmtDateShort(d) + ' 時点の予測残高：' + fmtYen(bal);
-  });
+  /* ---------------- カード別の月間支払い ---------------- */
 
-  /* ---------------- 折れ線チャート（SVG） ---------------- */
-
-  var CHART_W = 320, CHART_H = 150, PAD_L = 8, PAD_R = 8, PAD_T = 18, PAD_B = 24;
-
-  function buildChartSvg(points) {
-    var vals = points.map(function (p) { return p.total; });
-    var min = Math.min.apply(null, vals);
-    var max = Math.max.apply(null, vals);
-    if (min === max) { min -= 1; max += 1; }
-    var range = max - min;
-    var n = points.length;
-
-    function x(i) { return n <= 1 ? CHART_W / 2 : PAD_L + (i / (n - 1)) * (CHART_W - PAD_L - PAD_R); }
-    function y(v) { return CHART_H - PAD_B - ((v - min) / range) * (CHART_H - PAD_T - PAD_B); }
-
-    var path = 'M ' + x(0) + ' ' + y(points[0].total);
-    for (var i = 1; i < n; i++) {
-      path += ' H ' + x(i) + ' V ' + y(points[i].total);
-    }
-    var areaPath = path + ' L ' + x(n - 1) + ' ' + (CHART_H - PAD_B) + ' L ' + x(0) + ' ' + (CHART_H - PAD_B) + ' Z';
-
-    var zeroLine = '';
-    if (min < 0 && max > 0) {
-      zeroLine = '<line x1="' + PAD_L + '" y1="' + y(0) + '" x2="' + (CHART_W - PAD_R) + '" y2="' + y(0) +
-        '" stroke="var(--line)" stroke-width="1" stroke-dasharray="3,3" />';
-    }
-
-    var dots = points.map(function (p, i) {
-      return '<circle class="chart-hit" data-i="' + i + '" cx="' + x(i) + '" cy="' + y(p.total) +
-        '" r="9" fill="transparent" style="cursor:pointer" />' +
-        '<circle cx="' + x(i) + '" cy="' + y(p.total) + '" r="3" fill="var(--accent-2)" stroke="var(--panel)" stroke-width="1.5" pointer-events="none" />';
-    }).join('');
-
-    var firstLabel = fmtDateShort(points[0].date) + '  ' + fmtYen(points[0].total);
-    var lastLabel = fmtDateShort(points[n - 1].date) + '  ' + fmtYen(points[n - 1].total);
-
-    return '<svg viewBox="0 0 ' + CHART_W + ' ' + CHART_H + '" preserveAspectRatio="xMidYMid meet">' +
-      '<defs><linearGradient id="simFill" x1="0" y1="0" x2="0" y2="1">' +
-      '<stop offset="0%" stop-color="#3ea6ff" stop-opacity="0.35"/>' +
-      '<stop offset="100%" stop-color="#3ea6ff" stop-opacity="0"/></linearGradient></defs>' +
-      zeroLine +
-      '<path d="' + areaPath + '" fill="url(#simFill)" stroke="none" />' +
-      '<path d="' + path + '" fill="none" stroke="var(--accent-2)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />' +
-      dots +
-      '<text x="' + PAD_L + '" y="12" font-size="9" fill="var(--muted)">' + esc(firstLabel) + '</text>' +
-      '<text x="' + (CHART_W - PAD_R) + '" y="12" font-size="9" fill="var(--muted)" text-anchor="end">' + esc(lastLabel) + '</text>' +
-      '</svg>';
-  }
-
-  function bindChartInteraction(points) {
-    var wrap = $('sim-chart');
-    var tip = $('chart-tooltip');
-    wrap.querySelectorAll('.chart-hit').forEach(function (c) {
-      c.addEventListener('click', function (e) {
-        e.stopPropagation();
-        var i = Number(c.getAttribute('data-i'));
-        var p = points[i];
-        var cx = Number(c.getAttribute('cx')), cy = Number(c.getAttribute('cy'));
-        tip.style.left = (cx / CHART_W * 100) + '%';
-        tip.style.top = (cy / CHART_H * 100) + '%';
-        tip.textContent = fmtDateShort(p.date) + '　' + fmtYen(p.total);
-        tip.hidden = false;
-      });
+  function renderCardTotals() {
+    var totals = S.cardMonthlyTotals(state.calYear, state.calMonth);
+    $('card-totals-mode').querySelectorAll('.segment-btn').forEach(function (b) {
+      b.classList.toggle('active', b.getAttribute('data-mode') === state.cardTotalsMode);
     });
-    wrap.addEventListener('click', function () { tip.hidden = true; });
+    $('card-totals-list').innerHTML = totals.length ? totals.map(function (t) {
+      var amt = state.cardTotalsMode === 'withPlanned' ? t.withPlanned : t.confirmed;
+      return '<div class="mini-row"><span>' + esc(t.name) + '</span><span>' + fmtYen(amt) + '</span></div>';
+    }).join('') : '<div class="empty-state">カードがありません</div>';
   }
+
+  $('card-totals-mode').addEventListener('click', function (e) {
+    var btn = e.target.closest('.segment-btn');
+    if (!btn) return;
+    state.cardTotalsMode = btn.getAttribute('data-mode');
+    renderCardTotals();
+  });
 
   /* ---------------- 描画：入出（取引・払い戻し） ---------------- */
 
@@ -656,33 +566,58 @@
   function openCardForm(existing) {
     var c = existing || {
       name: '', accountId: (S.activeAccounts()[0] || {}).id || '', note: '',
-      closingDay: 31, paymentDay: 27, paymentMonthOffset: 1
+      cardType: 'credit', closingDay: 31, paymentDay: 27, paymentMonthOffset: 1
     };
+    var cardType = c.cardType || 'credit';
     var offsetOptions = PAYMENT_OFFSET_LABELS.map(function (label, i) {
       return '<option value="' + i + '"' + (i === c.paymentMonthOffset ? ' selected' : '') + '>' + label + '</option>';
     }).join('');
+
+    function cycleFieldsHtml() {
+      if (cardType === 'debit') {
+        return '<p class="note">デビットカードは支払った翌日に口座から引き落とされるものとして計算します。</p>';
+      }
+      return '<div class="field-row">' +
+        '<div class="field"><label>締め日（毎月）</label><input type="number" id="f-closing" min="1" max="31" value="' + c.closingDay + '" /></div>' +
+        '<div class="field"><label>支払日（毎月）</label><input type="number" id="f-payday" min="1" max="31" value="' + c.paymentDay + '" /></div>' +
+        '</div>' +
+        '<div class="field"><label>支払月</label><select id="f-offset">' + offsetOptions + '</select></div>' +
+        '<p class="note">日にちは31にすると「月末」の意味になります。例えば「15日締め・翌月10日払い」なら締め日15、支払月「翌月」、支払日10。この情報から、このカードで払った日→実際に口座から引き落とされる日を自動計算します。</p>';
+    }
+
     var html =
       '<div class="field"><label>カード名</label><input type="text" id="f-name" value="' + esc(c.name) + '" placeholder="例：クレジット1" /></div>' +
-      '<div class="field"><label>紐づく口座</label><select id="f-account">' + accountOptions(c.accountId) + '</select></div>' +
-      '<div class="field-row">' +
-      '<div class="field"><label>締め日（毎月）</label><input type="number" id="f-closing" min="1" max="31" value="' + c.closingDay + '" /></div>' +
-      '<div class="field"><label>支払日（毎月）</label><input type="number" id="f-payday" min="1" max="31" value="' + c.paymentDay + '" /></div>' +
+      '<div class="toggle-row" id="f-cardtype">' +
+      '<button type="button" data-cardtype="credit" class="' + (cardType === 'credit' ? 'active' : '') + '">クレジット</button>' +
+      '<button type="button" data-cardtype="debit" class="' + (cardType === 'debit' ? 'active' : '') + '">デビット</button>' +
       '</div>' +
-      '<div class="field"><label>支払月</label><select id="f-offset">' + offsetOptions + '</select></div>' +
-      '<p class="note">日にちは31にすると「月末」の意味になります。例えば「15日締め・翌月10日払い」なら締め日15、支払月「翌月」、支払日10。この情報から、このカードで払った日→実際に口座から引き落とされる日を自動計算します。</p>' +
+      '<div class="field"><label>紐づく口座</label><select id="f-account">' + accountOptions(c.accountId) + '</select></div>' +
+      '<div id="cycle-wrap">' + cycleFieldsHtml() + '</div>' +
       '<div class="field"><label>メモ</label><input type="text" id="f-note" value="' + esc(c.note) + '" /></div>' +
       '<div class="sheet-actions">' +
       '<button class="btn primary" id="f-save">保存</button>' +
       (existing ? '<button class="btn danger" id="f-delete">削除</button>' : '') +
       '</div>';
     openSheet(existing ? 'カードを編集' : 'カードを追加', html, function (body) {
+      body.querySelectorAll('#f-cardtype button').forEach(function (btn) {
+        btn.addEventListener('click', function () {
+          cardType = btn.getAttribute('data-cardtype');
+          body.querySelectorAll('#f-cardtype button').forEach(function (b) { b.classList.toggle('active', b === btn); });
+          body.querySelector('#cycle-wrap').innerHTML = cycleFieldsHtml();
+        });
+      });
+
       body.querySelector('#f-save').addEventListener('click', function () {
+        var closingEl = body.querySelector('#f-closing');
+        var paydayEl = body.querySelector('#f-payday');
+        var offsetEl = body.querySelector('#f-offset');
         var fields = {
           name: body.querySelector('#f-name').value.trim() || '無題のカード',
           accountId: body.querySelector('#f-account').value,
-          closingDay: Number(body.querySelector('#f-closing').value) || 31,
-          paymentDay: Number(body.querySelector('#f-payday').value) || 27,
-          paymentMonthOffset: Number(body.querySelector('#f-offset').value),
+          cardType: cardType,
+          closingDay: closingEl ? Number(closingEl.value) || 31 : 31,
+          paymentDay: paydayEl ? Number(paydayEl.value) || 27 : 27,
+          paymentMonthOffset: offsetEl ? Number(offsetEl.value) : 1,
           note: body.querySelector('#f-note').value.trim()
         };
         if (existing) S.updateCard(existing.id, fields); else S.addCard(fields);

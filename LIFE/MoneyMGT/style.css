@@ -138,34 +138,6 @@ button, input, select, textarea { font-family: inherit; }
 .panel-sub { border-top: 1px solid var(--line); padding-top: 10px; }
 .panel-sub h3 { margin: 0 0 8px; font-size: 12px; color: var(--muted); font-weight: 600; }
 
-.chip-row { display: flex; gap: 6px; flex-wrap: wrap; }
-.chip {
-  padding: 6px 12px;
-  border-radius: 999px;
-  border: 1px solid var(--line);
-  background: var(--panel-2);
-  color: var(--muted);
-  font-size: 12px;
-  cursor: pointer;
-}
-.chip.active { color: var(--bg); background: var(--accent); border-color: var(--accent); font-weight: 700; }
-
-.chart-wrap { position: relative; }
-.chart-wrap svg { width: 100%; height: auto; display: block; }
-.chart-tooltip {
-  position: absolute;
-  transform: translate(-50%, -110%);
-  background: rgba(35, 43, 56, 0.96);
-  border: 1px solid var(--line);
-  border-radius: 8px;
-  padding: 6px 9px;
-  font-size: 11px;
-  white-space: nowrap;
-  pointer-events: none;
-  z-index: 5;
-}
-.chart-tooltip[hidden] { display: none; }
-
 .stat-row { display: flex; gap: 10px; }
 .stat-row > div {
   flex: 1;
@@ -178,9 +150,6 @@ button, input, select, textarea { font-family: inherit; }
 .stat-row .stat-value { margin-top: 3px; font-size: 15px; font-weight: 700; font-variant-numeric: tabular-nums; }
 .stat-value.pos { color: var(--good); }
 .stat-value.neg { color: var(--bad); }
-
-.row { display: flex; align-items: center; gap: 8px; }
-.row-input input[type="date"] { flex: 1; }
 
 .event-list, .entry-list { display: flex; flex-direction: column; gap: 7px; }
 .event-row, .entry-row {
