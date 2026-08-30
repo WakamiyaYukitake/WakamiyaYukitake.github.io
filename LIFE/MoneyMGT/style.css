@@ -247,7 +247,12 @@ button, input, select, textarea { font-family: inherit; }
 .cal-day.today .cal-daynum { color: var(--accent); font-weight: 800; }
 .cal-day.selected { background: var(--panel-3); border-color: var(--accent-2); }
 .cal-detail { margin-top: 10px; display: flex; flex-direction: column; gap: 7px; }
-.cal-detail .cal-detail-head { font-size: 12px; color: var(--muted); }
+.cal-detail .cal-detail-head { font-size: 12px; color: var(--muted); margin-top: 4px; }
+.cal-bal-list { display: flex; flex-direction: column; gap: 5px; }
+.cal-bal-row { display: flex; align-items: center; gap: 8px; font-size: 13px; }
+.cal-bal-row .dot { width: 8px; height: 8px; border-radius: 50%; flex: none; }
+.cal-bal-row .cal-bal-name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.cal-bal-row .cal-bal-amt { font-weight: 700; font-variant-numeric: tabular-nums; }
 
 /* ---------- 区切りタブ（セグメント） ---------- */
 .segment { display: flex; gap: 6px; background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 4px; }

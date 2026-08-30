@@ -5,8 +5,11 @@
   var S = MoneyStore.load();
   var U = MoneyStore.util;
 
-  var APP_VERSION = 'v1.1.0';
+  var APP_VERSION = 'v1.2.0';
   var ACCOUNT_COLORS = ['#3ea6ff', '#ff8a3d', '#4cd08a', '#c792ea', '#ffd166', '#ef476f'];
+  /* 外貨サブスク用の概算レート（1通貨あたり円）。ユーザーが選んだときの初期値で、後から自由に編集できる。 */
+  var FX_PRESETS = { JPY: 1, USD: 150, EUR: 160, GBP: 190, KRW: 0.11, CNY: 21, AUD: 100 };
+  var PAYMENT_OFFSET_LABELS = ['当月', '翌月', '翌々月', '3ヶ月後'];
   var HORIZON_CHIPS = [
     { days: 30, label: '1ヶ月' },
     { days: 90, label: '3ヶ月' },
@@ -73,6 +76,13 @@
     if (!id) return '';
     var c = S.getCard(id);
     return c ? c.name : '（削除されたカード）';
+  }
+  function cardCycleLabel(c) {
+    if (!c) return '';
+    var closing = c.closingDay >= 31 ? '月末' : c.closingDay + '日';
+    var payment = c.paymentDay >= 31 ? '月末' : c.paymentDay + '日';
+    var offsetLabel = PAYMENT_OFFSET_LABELS[c.paymentMonthOffset] || (c.paymentMonthOffset + 'ヶ月後');
+    return closing + '締め ・ ' + offsetLabel + payment + '払い';
   }
 
   /* ---------------- クラウド同期 ---------------- */
@@ -293,10 +303,30 @@
   }
 
   function renderCalDetail(dayEvents) {
-    var head = '<div class="cal-detail-head">' + fmtDateShort(state.calSelected) + 'の入出金</div>';
+    var dateStr = state.calSelected;
+    var accounts = S.activeAccounts();
+    var balHtml = accounts.map(function (a) {
+      var bal = S.accountBalanceOnDate(a.id, dateStr);
+      return '<div class="cal-bal-row">' +
+        '<span class="dot" style="background:' + accountColor(a.id) + '"></span>' +
+        '<span class="cal-bal-name">' + esc(a.name) + '</span>' +
+        '<span class="cal-bal-amt">' + fmtYen(bal) + '</span></div>';
+    }).join('');
+
+    var income = dayEvents.filter(function (e) { return e.amount > 0; }).reduce(function (s, e) { return s + e.amount; }, 0);
+    var expense = dayEvents.filter(function (e) { return e.amount < 0; }).reduce(function (s, e) { return s + e.amount; }, 0);
+    var isFuture = U.cmpDate(dateStr, U.todayStr()) > 0;
+
+    var head = '<div class="cal-detail-head">' + fmtDateShort(dateStr) + (isFuture ? ' 時点の予測残高' : ' 時点の残高') + '</div>' +
+      '<div class="cal-bal-list">' + balHtml + '</div>' +
+      '<div class="stat-row">' +
+      '<div><div class="stat-label">この日の収入</div><div class="stat-value pos">' + fmtYen(income) + '</div></div>' +
+      '<div><div class="stat-label">この日の支出</div><div class="stat-value neg">' + fmtYen(Math.abs(expense)) + '</div></div>' +
+      '</div>';
+    var listHead = '<div class="cal-detail-head">内訳</div>';
     var body = dayEvents.length ? dayEvents.map(eventRowHtml).join('') :
       '<div class="empty-state">この日の入出金はありません</div>';
-    $('cal-detail').innerHTML = head + body;
+    $('cal-detail').innerHTML = head + listHead + body;
   }
 
   $('cal-prev').addEventListener('click', function () { shiftCalMonth(-1); });
@@ -398,20 +428,32 @@
     $('tx-list').innerHTML = txs.length ? txs.map(function (t) {
       var refunded = S.data.refunds.filter(function (r) { return r.targetTransactionId === t.id; })
         .reduce(function (sum, r) { return sum + r.amount; }, 0);
-      var badge = refunded > 0 ? '<span class="badge received">払戻 ' + fmtYen(refunded) + '</span>' : '';
+      var badges = (refunded > 0 ? '<span class="badge received">払戻 ' + fmtYen(refunded) + '</span>' : '') +
+        (t.status === 'planned' ? '<span class="badge planned">予定</span>' : '');
       var cls = t.type === 'income' ? 'amt-pos' : 'amt-neg';
       var sign = t.type === 'income' ? '+' : '-';
-      var sub = fmtDateShort(t.date) + ' ・ ' + esc(accountName(t.accountId)) + (t.cardId ? ' ・ ' + esc(cardName(t.cardId)) : '');
+      var sub = fmtDateShort(t.date) + ' ・ ' + esc(accountName(t.accountId)) + (t.cardId ? ' ・ ' + esc(cardName(t.cardId)) : '') +
+        (t.settleDate !== t.date ? '（引落 ' + fmtDateShort(t.settleDate) + '）' : '');
+      var confirmBtn = t.status === 'planned' ? '<button class="btn small" data-confirm-tx="' + t.id + '">確定にする</button>' : '';
       return '<div class="entry-row" data-tx-id="' + t.id + '">' +
         '<span class="kind-dot" style="background:' + (t.type === 'income' ? KIND_COLOR.income : KIND_COLOR.expense) + '"></span>' +
-        '<div class="ev-info"><div class="ev-title">' + esc(t.title || (t.type === 'income' ? '入金' : '支出')) + badge + '</div>' +
+        '<div class="ev-info"><div class="ev-title">' + esc(t.title || (t.type === 'income' ? '入金' : '支出')) + badges + '</div>' +
         '<div class="ev-sub">' + sub + '</div></div>' +
+        confirmBtn +
         '<div class="ev-amount ' + cls + '">' + sign + fmtYen(t.amount) + '</div></div>';
     }).join('') : '<div class="empty-state">取引がまだありません</div>';
 
     $('tx-list').querySelectorAll('.entry-row').forEach(function (row) {
       row.addEventListener('click', function () {
         openTransactionForm(S.getTransaction(row.getAttribute('data-tx-id')));
+      });
+    });
+    $('tx-list').querySelectorAll('[data-confirm-tx]').forEach(function (btn) {
+      btn.addEventListener('click', function (e) {
+        e.stopPropagation();
+        S.updateTransaction(btn.getAttribute('data-confirm-tx'), { status: 'confirmed' });
+        renderAll();
+        toast('確定にしました');
       });
     });
 
@@ -474,7 +516,9 @@
     var list = S.subscriptionsSorted();
     $('subs-list').innerHTML = list.length ? list.map(function (s) {
       var badge = s.active ? '' : '<span class="badge inactive">停止中</span>';
-      var sub = '毎月' + s.billingDay + '日 ・ ' + esc(accountName(s.accountId)) + (s.cardId ? ' ・ ' + esc(cardName(s.cardId)) : '');
+      var fx = s.currency && s.currency !== 'JPY' ?
+        ' ・ ' + s.foreignAmount + ' ' + s.currency + '（概算）' : '';
+      var sub = '毎月' + s.billingDay + '日にカード計上 ・ ' + esc(accountName(s.accountId)) + (s.cardId ? ' ・ ' + esc(cardName(s.cardId)) : '') + esc(fx);
       return '<div class="entry-row" data-sub-id="' + s.id + '">' +
         '<span class="kind-dot" style="background:' + KIND_COLOR.subscription + '"></span>' +
         '<div class="ev-info"><div class="ev-title">' + esc(s.name) + badge + '</div>' +
@@ -610,10 +654,22 @@
   /* ---------------- フォーム：カード ---------------- */
 
   function openCardForm(existing) {
-    var c = existing || { name: '', accountId: (S.activeAccounts()[0] || {}).id || '', note: '' };
+    var c = existing || {
+      name: '', accountId: (S.activeAccounts()[0] || {}).id || '', note: '',
+      closingDay: 31, paymentDay: 27, paymentMonthOffset: 1
+    };
+    var offsetOptions = PAYMENT_OFFSET_LABELS.map(function (label, i) {
+      return '<option value="' + i + '"' + (i === c.paymentMonthOffset ? ' selected' : '') + '>' + label + '</option>';
+    }).join('');
     var html =
       '<div class="field"><label>カード名</label><input type="text" id="f-name" value="' + esc(c.name) + '" placeholder="例：クレジット1" /></div>' +
       '<div class="field"><label>紐づく口座</label><select id="f-account">' + accountOptions(c.accountId) + '</select></div>' +
+      '<div class="field-row">' +
+      '<div class="field"><label>締め日（毎月）</label><input type="number" id="f-closing" min="1" max="31" value="' + c.closingDay + '" /></div>' +
+      '<div class="field"><label>支払日（毎月）</label><input type="number" id="f-payday" min="1" max="31" value="' + c.paymentDay + '" /></div>' +
+      '</div>' +
+      '<div class="field"><label>支払月</label><select id="f-offset">' + offsetOptions + '</select></div>' +
+      '<p class="note">日にちは31にすると「月末」の意味になります。例えば「15日締め・翌月10日払い」なら締め日15、支払月「翌月」、支払日10。この情報から、このカードで払った日→実際に口座から引き落とされる日を自動計算します。</p>' +
       '<div class="field"><label>メモ</label><input type="text" id="f-note" value="' + esc(c.note) + '" /></div>' +
       '<div class="sheet-actions">' +
       '<button class="btn primary" id="f-save">保存</button>' +
@@ -624,6 +680,9 @@
         var fields = {
           name: body.querySelector('#f-name').value.trim() || '無題のカード',
           accountId: body.querySelector('#f-account').value,
+          closingDay: Number(body.querySelector('#f-closing').value) || 31,
+          paymentDay: Number(body.querySelector('#f-payday').value) || 27,
+          paymentMonthOffset: Number(body.querySelector('#f-offset').value),
           note: body.querySelector('#f-note').value.trim()
         };
         if (existing) S.updateCard(existing.id, fields); else S.addCard(fields);
@@ -652,24 +711,30 @@
 
   function openTransactionForm(existing) {
     var t = existing || {
-      type: 'expense', date: U.todayStr(), settleDate: U.todayStr(),
+      type: 'expense', status: 'confirmed', date: U.todayStr(), settleDate: U.todayStr(),
       accountId: (S.activeAccounts()[0] || {}).id || '', cardId: null, amount: '', title: '', note: ''
     };
     var type = t.type;
+    var status = t.status || 'confirmed';
 
     function fieldsHtml() {
       return '<div class="toggle-row" id="f-type">' +
         '<button type="button" data-type="expense" class="' + (type === 'expense' ? 'active' : '') + '">支出</button>' +
         '<button type="button" data-type="income" class="' + (type === 'income' ? 'active' : '') + '">収入</button>' +
         '</div>' +
+        '<div class="toggle-row" id="f-status">' +
+        '<button type="button" data-status="planned" class="' + (status === 'planned' ? 'active' : '') + '">予定</button>' +
+        '<button type="button" data-status="confirmed" class="' + (status === 'confirmed' ? 'active' : '') + '">確定</button>' +
+        '</div>' +
         '<div class="field"><label>内容（何に対して／何の入金か）</label><input type="text" id="f-title" value="' + esc(t.title) + '" placeholder="例：教科書代 / アルバイト代" /></div>' +
         '<div class="field"><label>金額</label><input type="number" id="f-amount" value="' + t.amount + '" /></div>' +
         '<div class="field-row">' +
         '<div class="field"><label>日付（購入日／入金日）</label><input type="date" id="f-date" value="' + t.date + '" /></div>' +
-        '<div class="field"><label>口座反映日（空欄可）</label><input type="date" id="f-settle" value="' + t.settleDate + '" /></div>' +
+        '<div class="field"><label>口座反映日（引き落とし日）</label><input type="date" id="f-settle" value="' + t.settleDate + '" /></div>' +
         '</div>' +
         '<div class="field"><label>口座</label><select id="f-account">' + accountOptions(t.accountId) + '</select></div>' +
         (type === 'expense' ? '<div class="field"><label>クレジットカード（任意）</label><select id="f-card">' + cardOptions(t.cardId) + '</select></div>' : '') +
+        (type === 'expense' && t.cardId ? '<p class="note" id="f-settle-note">カードの締め日・支払日から引き落とし日を自動計算しています。手動で変更もできます。</p>' : '') +
         '<div class="field"><label>メモ</label><textarea id="f-note">' + esc(t.note) + '</textarea></div>';
     }
 
@@ -680,27 +745,53 @@
       '</div>';
 
     openSheet(existing ? '取引を編集' : '取引を追加', html, function (body) {
-      function bindTypeToggle() {
+      function syncFromDom() {
+        t.title = body.querySelector('#f-title').value;
+        t.amount = body.querySelector('#f-amount').value;
+        t.date = body.querySelector('#f-date').value;
+        t.settleDate = body.querySelector('#f-settle').value;
+        t.accountId = body.querySelector('#f-account').value;
+        var cardEl = body.querySelector('#f-card');
+        t.cardId = cardEl ? cardEl.value || null : null;
+      }
+      function rebuild() {
+        syncFromDom();
+        body.querySelector('#fields-wrap').innerHTML = fieldsHtml();
+        bindAll();
+      }
+      function autoSettle() {
+        var cardEl = body.querySelector('#f-card');
+        var cardId = cardEl ? cardEl.value : null;
+        var dateVal = body.querySelector('#f-date').value || U.todayStr();
+        if (cardId) {
+          body.querySelector('#f-settle').value = S.settleDateForCard(dateVal, cardId);
+        } else {
+          body.querySelector('#f-settle').value = dateVal;
+        }
+      }
+      function bindAll() {
         body.querySelectorAll('#f-type button').forEach(function (btn) {
+          btn.addEventListener('click', function () { type = btn.getAttribute('data-type'); rebuild(); });
+        });
+        body.querySelectorAll('#f-status button').forEach(function (btn) {
           btn.addEventListener('click', function () {
-            type = btn.getAttribute('data-type');
-            t.title = body.querySelector('#f-title').value;
-            t.amount = body.querySelector('#f-amount').value;
-            t.date = body.querySelector('#f-date').value;
-            t.settleDate = body.querySelector('#f-settle').value;
-            t.accountId = body.querySelector('#f-account').value;
-            body.querySelector('#fields-wrap').innerHTML = fieldsHtml();
-            bindTypeToggle();
+            status = btn.getAttribute('data-status');
+            body.querySelectorAll('#f-status button').forEach(function (b) { b.classList.toggle('active', b === btn); });
           });
         });
+        var cardEl = body.querySelector('#f-card');
+        if (cardEl) cardEl.addEventListener('change', function () { autoSettle(); rebuild(); });
+        var dateEl = body.querySelector('#f-date');
+        if (dateEl) dateEl.addEventListener('change', autoSettle);
       }
-      bindTypeToggle();
+      bindAll();
 
       body.querySelector('#f-save').addEventListener('click', function () {
         var date = body.querySelector('#f-date').value || U.todayStr();
         var settle = body.querySelector('#f-settle').value || date;
         var fields = {
           type: type,
+          status: status,
           title: body.querySelector('#f-title').value.trim(),
           amount: Number(body.querySelector('#f-amount').value) || 0,
           date: date,
@@ -869,19 +960,42 @@
 
   /* ---------------- フォーム：サブスク ---------------- */
 
+  var CURRENCIES = ['JPY', 'USD', 'EUR', 'GBP', 'KRW', 'CNY', 'AUD'];
+
   function openSubscriptionForm(existing) {
     var s = existing || {
-      name: '', amount: '', billingDay: 1, startDate: U.todayStr(),
+      name: '', amount: '', currency: 'JPY', foreignAmount: '', fxRate: 1, billingDay: 1, startDate: U.todayStr(),
       accountId: (S.activeAccounts()[0] || {}).id || '', cardId: null, active: true, note: ''
     };
+    var currency = s.currency || 'JPY';
+
+    function amountFieldsHtml() {
+      if (currency === 'JPY') {
+        return '<div class="field"><label>金額（毎月）</label><input type="number" id="f-amount" value="' + (s.amount || '') + '" /></div>';
+      }
+      var fx = s.currency === currency && s.fxRate ? s.fxRate : (FX_PRESETS[currency] || 1);
+      var fAmt = s.currency === currency && s.foreignAmount != null ? s.foreignAmount : '';
+      return '<div class="field-row">' +
+        '<div class="field"><label>金額（' + currency + '）</label><input type="number" step="0.01" id="f-famount" value="' + fAmt + '" /></div>' +
+        '<div class="field"><label>概算レート（1' + currency + '=◯円）</label><input type="number" step="0.01" id="f-fxrate" value="' + fx + '" /></div>' +
+        '</div>' +
+        '<p class="note" id="f-fx-preview">' + fxPreviewText(fAmt, fx) + '</p>';
+    }
+    function fxPreviewText(fAmt, fx) {
+      return '≈ ' + fmtYen((Number(fAmt) || 0) * (Number(fx) || 0)) + '（レートは概算です。実際の請求額に合わせて調整してください）';
+    }
+    var currencyOptions = CURRENCIES.map(function (c) {
+      return '<option value="' + c + '"' + (c === currency ? ' selected' : '') + '>' + c + '</option>';
+    }).join('');
+
     var html =
       '<div class="field"><label>サブスク名</label><input type="text" id="f-name" value="' + esc(s.name) + '" placeholder="例：Netflix" /></div>' +
-      '<div class="field-row">' +
-      '<div class="field"><label>金額（毎月）</label><input type="number" id="f-amount" value="' + s.amount + '" /></div>' +
-      '<div class="field"><label>請求日（毎月◯日）</label><input type="number" id="f-day" min="1" max="31" value="' + s.billingDay + '" /></div>' +
-      '</div>' +
+      '<div class="field"><label>通貨</label><select id="f-currency">' + currencyOptions + '</select></div>' +
+      '<div id="amount-wrap">' + amountFieldsHtml() + '</div>' +
+      '<div class="field"><label>請求日（毎月◯日・カードに計上される日）</label><input type="number" id="f-day" min="1" max="31" value="' + s.billingDay + '" /></div>' +
       '<div class="field"><label>口座</label><select id="f-account">' + accountOptions(s.accountId) + '</select></div>' +
       '<div class="field"><label>クレジットカード（任意）</label><select id="f-card">' + cardOptions(s.cardId, s.accountId) + '</select></div>' +
+      '<p class="note">カードを選ぶと、そのカードの締め日・支払日から実際に口座から引き落とされる日を自動計算します。</p>' +
       '<div class="field"><label>開始日</label><input type="date" id="f-start" value="' + s.startDate + '" /></div>' +
       '<div class="toggle-row" id="f-active">' +
       '<button type="button" data-active="1" class="' + (s.active ? 'active' : '') + '">有効</button>' +
@@ -905,10 +1019,42 @@
         body.querySelector('#f-card').innerHTML = cardOptions(null, this.value);
       });
 
+      function bindAmountInputs() {
+        var famountEl = body.querySelector('#f-famount');
+        var fxrateEl = body.querySelector('#f-fxrate');
+        if (famountEl && fxrateEl) {
+          var updatePreview = function () {
+            var preview = body.querySelector('#f-fx-preview');
+            if (preview) preview.textContent = fxPreviewText(famountEl.value, fxrateEl.value);
+          };
+          famountEl.addEventListener('input', updatePreview);
+          fxrateEl.addEventListener('input', updatePreview);
+        }
+      }
+      bindAmountInputs();
+      body.querySelector('#f-currency').addEventListener('change', function () {
+        currency = this.value;
+        body.querySelector('#amount-wrap').innerHTML = amountFieldsHtml();
+        bindAmountInputs();
+      });
+
       body.querySelector('#f-save').addEventListener('click', function () {
+        var amount, foreignAmount, fxRate;
+        if (currency === 'JPY') {
+          amount = Number(body.querySelector('#f-amount').value) || 0;
+          foreignAmount = amount;
+          fxRate = 1;
+        } else {
+          foreignAmount = Number(body.querySelector('#f-famount').value) || 0;
+          fxRate = Number(body.querySelector('#f-fxrate').value) || 0;
+          amount = Math.round(foreignAmount * fxRate);
+        }
         var fields = {
           name: body.querySelector('#f-name').value.trim() || '無題のサブスク',
-          amount: Number(body.querySelector('#f-amount').value) || 0,
+          currency: currency,
+          amount: amount,
+          foreignAmount: foreignAmount,
+          fxRate: fxRate,
           billingDay: Math.min(31, Math.max(1, Number(body.querySelector('#f-day').value) || 1)),
           accountId: body.querySelector('#f-account').value,
           cardId: body.querySelector('#f-card').value || null,
@@ -943,7 +1089,8 @@
     }).join('') || '<div class="empty-state">口座がありません</div>';
 
     var cardHtml = S.data.cards.map(function (c) {
-      return '<div class="mini-row"><span>' + esc(c.name) + ' ・ ' + esc(accountName(c.accountId)) + '</span>' +
+      return '<div class="mini-row"><span>' + esc(c.name) + ' ・ ' + esc(accountName(c.accountId)) +
+        '<br><span class="cal-detail-head">' + esc(cardCycleLabel(c)) + '</span></span>' +
         '<div class="mini-actions"><button data-edit-card="' + c.id + '">編集</button></div></div>';
     }).join('') || '<div class="empty-state">カードがありません</div>';
 
