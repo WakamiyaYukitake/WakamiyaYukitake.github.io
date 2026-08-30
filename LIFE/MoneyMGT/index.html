@@ -6,12 +6,16 @@
   <title>MoneyMGT — お金の管理</title>
   <meta name="description" content="複数口座の残高・入出金・払い戻し・収入予定・サブスクを管理し、将来の貯金額をシミュレーションするアプリ。" />
   <meta name="theme-color" content="#12161c" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="MoneyMGT" />
+  <meta name="mobile-web-app-capable" content="yes" />
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
   <div id="app">
     <header id="topbar">
-      <div class="brand">MoneyMGT</div>
+      <div class="brand">MoneyMGT <span id="app-version" class="ver"></span></div>
       <div class="status">
         <div id="status-main">読み込み中…</div>
         <div id="status-sub" class="sub">&nbsp;</div>
@@ -41,8 +45,17 @@
             <div id="sim-date-result" class="note"></div>
           </div>
           <div class="panel-sub">
-            <h3>今後の入出金予定</h3>
-            <div id="sim-events" class="event-list"></div>
+            <h3>カレンダーで見る</h3>
+            <div class="cal-head">
+              <button id="cal-prev" class="icon-btn small" aria-label="前の月">‹</button>
+              <div id="cal-title" class="cal-title"></div>
+              <button id="cal-next" class="icon-btn small" aria-label="次の月">›</button>
+            </div>
+            <div class="cal-weekdays">
+              <span>日</span><span>月</span><span>火</span><span>水</span><span>木</span><span>金</span><span>土</span>
+            </div>
+            <div id="cal-grid" class="cal-grid"></div>
+            <div id="cal-detail" class="cal-detail"></div>
           </div>
         </section>
       </section>

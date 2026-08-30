@@ -5,6 +5,7 @@
   var S = MoneyStore.load();
   var U = MoneyStore.util;
 
+  var APP_VERSION = 'v1.1.0';
   var ACCOUNT_COLORS = ['#3ea6ff', '#ff8a3d', '#4cd08a', '#c792ea', '#ffd166', '#ef476f'];
   var HORIZON_CHIPS = [
     { days: 30, label: '1ヶ月' },
@@ -13,10 +14,14 @@
     { days: 365, label: '1年' }
   ];
 
+  var todayD = new Date();
   var state = {
     view: 'overview',
     ledgerTab: 'tx',
-    simHorizon: 90
+    simHorizon: 90,
+    calYear: todayD.getFullYear(),
+    calMonth: todayD.getMonth() + 1, // 1-12
+    calSelected: U.todayStr()
   };
 
   /* ---------------- 初回起動：口座の下地を用意 ---------------- */
@@ -169,6 +174,7 @@
     var total = S.totalBalance(U.todayStr());
     $('status-main').textContent = fmtYen(total);
     $('status-sub').textContent = '合計残高 ・ ' + S.activeAccounts().length + '口座';
+    $('app-version').textContent = APP_VERSION;
   }
 
   /* ---------------- 描画：概要 ---------------- */
@@ -229,19 +235,80 @@
 
     if (!$('sim-date-input').value) $('sim-date-input').value = U.addDays(U.todayStr(), 30);
 
-    var events = sim.events;
-    $('sim-events').innerHTML = events.length ? events.slice(0, 20).map(eventRowHtml).join('') :
-      '<div class="empty-state">この期間に予定されている入出金はありません</div>';
+    renderCalendar();
   }
 
   var KIND_COLOR = { income: '#4cd08a', expense: '#ff6b6b', refund: '#3ea6ff', earning: '#ffd166', subscription: '#ff8a3d' };
   function eventRowHtml(ev) {
     var cls = ev.amount >= 0 ? 'amt-pos' : 'amt-neg';
+    var badge = ev.pending ? '<span class="badge planned">予定</span>' : '';
     return '<div class="event-row">' +
       '<span class="kind-dot" style="background:' + (KIND_COLOR[ev.kind] || '#888') + '"></span>' +
-      '<div class="ev-info"><div class="ev-title">' + esc(ev.label) + '</div>' +
+      '<div class="ev-info"><div class="ev-title">' + esc(ev.label) + badge + '</div>' +
       '<div class="ev-sub">' + fmtDateShort(ev.date) + ' ・ ' + esc(accountName(ev.accountId)) + '</div></div>' +
       '<div class="ev-amount ' + cls + '">' + fmtYenSigned(ev.amount) + '</div></div>';
+  }
+
+  /* ---------------- カレンダー ---------------- */
+
+  function renderCalendar() {
+    var y = state.calYear, m = state.calMonth;
+    $('cal-title').textContent = y + '年' + m + '月';
+
+    var events = S.monthEvents(y, m);
+    var byDate = {};
+    events.forEach(function (ev) {
+      (byDate[ev.date] = byDate[ev.date] || []).push(ev);
+    });
+
+    var firstWeekday = new Date(y, m - 1, 1).getDay();
+    var lastDay = new Date(y, m, 0).getDate();
+    var today = U.todayStr();
+
+    var cells = '';
+    for (var i = 0; i < firstWeekday; i++) cells += '<div class="cal-day pad"></div>';
+    for (var d = 1; d <= lastDay; d++) {
+      var dateStr = y + '-' + (m < 10 ? '0' + m : m) + '-' + (d < 10 ? '0' + d : d);
+      var dayEvents = byDate[dateStr] || [];
+      var net = dayEvents.reduce(function (sum, ev) { return sum + ev.amount; }, 0);
+      var cls = 'cal-day';
+      if (dateStr === today) cls += ' today';
+      if (dateStr === state.calSelected) cls += ' selected';
+      var amtHtml = '';
+      if (net !== 0) {
+        amtHtml = '<div class="cal-amt ' + (net > 0 ? 'amt-pos' : 'amt-neg') + '">' + fmtYenSigned(Math.round(net)).replace('¥', '') + '</div>';
+      }
+      cells += '<div class="' + cls + '" data-date="' + dateStr + '"><div class="cal-daynum">' + d + '</div>' + amtHtml + '</div>';
+    }
+
+    $('cal-grid').innerHTML = cells;
+    $('cal-grid').querySelectorAll('.cal-day:not(.pad)').forEach(function (cell) {
+      cell.addEventListener('click', function () {
+        state.calSelected = cell.getAttribute('data-date');
+        renderCalendar();
+      });
+    });
+
+    renderCalDetail(byDate[state.calSelected] || []);
+  }
+
+  function renderCalDetail(dayEvents) {
+    var head = '<div class="cal-detail-head">' + fmtDateShort(state.calSelected) + 'の入出金</div>';
+    var body = dayEvents.length ? dayEvents.map(eventRowHtml).join('') :
+      '<div class="empty-state">この日の入出金はありません</div>';
+    $('cal-detail').innerHTML = head + body;
+  }
+
+  $('cal-prev').addEventListener('click', function () { shiftCalMonth(-1); });
+  $('cal-next').addEventListener('click', function () { shiftCalMonth(1); });
+  function shiftCalMonth(delta) {
+    var m = state.calMonth + delta;
+    var y = state.calYear;
+    if (m < 1) { m = 12; y -= 1; }
+    if (m > 12) { m = 1; y += 1; }
+    state.calYear = y;
+    state.calMonth = m;
+    renderCalendar();
   }
 
   $('sim-date-btn').addEventListener('click', function () {

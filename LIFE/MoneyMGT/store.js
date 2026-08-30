@@ -553,6 +553,71 @@
       };
     },
 
+    /* 指定した月（year, month:1-12）に発生する入出金イベント一覧。
+     * upcomingEvents と違って過去日も含む（カレンダー表示用）。 */
+    monthEvents: function (year, month) {
+      var mm = pad2(month);
+      var start = year + '-' + mm + '-01';
+      var lastDay = new Date(year, month, 0).getDate();
+      var end = year + '-' + mm + '-' + pad2(lastDay);
+      var events = [];
+
+      this.data.transactions.forEach(function (t) {
+        if (cmpDate(t.settleDate, start) >= 0 && cmpDate(t.settleDate, end) <= 0) {
+          events.push({
+            date: t.settleDate,
+            label: t.title || (t.type === 'income' ? '入金' : '支出'),
+            amount: t.type === 'income' ? t.amount : -t.amount,
+            accountId: t.accountId,
+            kind: t.type === 'income' ? 'income' : 'expense'
+          });
+        }
+      });
+
+      this.data.refunds.forEach(function (r) {
+        if (cmpDate(r.date, start) >= 0 && cmpDate(r.date, end) <= 0) {
+          events.push({
+            date: r.date,
+            label: '払い戻し：' + (r.source || '未設定'),
+            amount: r.amount,
+            accountId: r.accountId,
+            kind: 'refund',
+            pending: !r.received
+          });
+        }
+      });
+
+      this.data.earnings.forEach(function (e) {
+        var d = (e.status === 'received' && e.actualPayDate) ? e.actualPayDate : e.expectedPayDate;
+        if (cmpDate(d, start) >= 0 && cmpDate(d, end) <= 0) {
+          events.push({
+            date: d,
+            label: '収入予定：' + (e.title || '無題'),
+            amount: e.amount,
+            accountId: e.accountId,
+            kind: 'earning',
+            pending: e.status !== 'received'
+          });
+        }
+      });
+
+      this.data.subscriptions.forEach(function (s) {
+        if (!s.active) return;
+        var occ = addMonthsClamped(start, 0, s.billingDay);
+        if (cmpDate(occ, s.startDate) < 0) return;
+        events.push({
+          date: occ,
+          label: 'サブスク：' + s.name,
+          amount: -s.amount,
+          accountId: s.accountId,
+          kind: 'subscription'
+        });
+      });
+
+      events.sort(function (a, b) { return cmpDate(a.date, b.date); });
+      return events;
+    },
+
     /* 特定の1日の予測残高（イベントをその日まで積算） */
     balanceOnDate: function (dateStr) {
       var today = todayStr();
