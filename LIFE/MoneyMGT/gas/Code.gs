@@ -2,27 +2,30 @@
  * MoneyMGT — GAS 同期バックエンド（参考コード）
  *
  * このファイルは GitHub Pages 上では実行されません。
- * Google Apps Script のプロジェクトに貼り付けて「ウェブアプリとしてデプロイ」してください。
- *
- * 使い方（初回セットアップ）
- * 1. Google スプレッドシートを新規作成し、その URL から SPREADSHEET_ID を controls.gs の
- *    SPREADSHEET_ID に貼り付ける（拡張機能 > Apps Script からこのコードを開いてもOK）。
- * 2. API_TOKEN を好きな文字列に変更する（推測されにくい適当な文字列でよい）。
- *    フロント側（app.js）から呼ぶときはこのトークンをURLの ?token= に付ける。
- * 3. 「デプロイ」→「新しいデプロイ」→ 種類「ウェブアプリ」
- *    - 実行するユーザー：自分
- *    - アクセスできるユーザー：全員（token で保護しているため）
- * 4. 発行された /exec の URL を控えておく。フロント側の同期機能はこのURLへ
- *    GET（読み込み）・POST（保存）する。
+ * スプレッドシートの「拡張機能 > Apps Script」から開いたプロジェクトに、
+ * このファイルの中身をまるごと貼り付けて使う（＝スプレッドシート紐づけのスクリプトとして使う想定）。
  *
  * データの持ち方
  * 「Backups」シートに 1ユーザー1行。列は [userId, updatedAt, json]。
+ * シート自体は setup() を一度実行すれば自動で作られる（手動で用意する必要はない）。
  * json 列に MoneyStore.data をまるごと JSON 文字列で保存する（バックアップと同じ形式）。
  */
 
-var SPREADSHEET_ID = 'ここに保存先スプレッドシートのIDを入力';
+// スプレッドシートに紐づけたスクリプト（拡張機能 > Apps Script）として使うので空文字のままでよい。
+// 別のスプレッドシートを明示的に指定したい場合だけ、その ID を入れる。
+var SPREADSHEET_ID = '';
 var API_TOKEN = 'ここに好きなトークン文字列を入力';
 var SHEET_NAME = 'Backups';
+
+/**
+ * 初回セットアップ用。エディタ上部の関数選択で setup を選び、実行ボタンを押す。
+ * ・権限確認ダイアログが出るので許可する
+ * ・実行後、スプレッドシートに「Backups」シートと見出し行ができていれば成功
+ */
+function setup() {
+  var sheet = getSheet_();
+  Logger.log('OK: ' + sheet.getParent().getUrl());
+}
 
 function getSheet_() {
   var ss = SPREADSHEET_ID
@@ -58,7 +61,7 @@ function checkToken_(token) {
  * -> { ok:true, updatedAt, data } または { ok:false, error }
  */
 function doGet(e) {
-  var params = e.parameter || {};
+  var params = (e && e.parameter) || {};
   if (!checkToken_(params.token)) {
     return jsonOutput_({ ok: false, error: 'invalid token' });
   }
@@ -91,9 +94,12 @@ function doGet(e) {
  * 既存行があれば上書き、なければ新規行を追加する（シンプルな「最後に保存した方が勝つ」方式）。
  */
 function doPost(e) {
-  var params = e.parameter || {};
+  var params = (e && e.parameter) || {};
   if (!checkToken_(params.token)) {
     return jsonOutput_({ ok: false, error: 'invalid token' });
+  }
+  if (!e || !e.postData) {
+    return jsonOutput_({ ok: false, error: 'missing request body' });
   }
 
   var body;
