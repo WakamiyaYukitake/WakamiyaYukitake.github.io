@@ -5,21 +5,27 @@
  * ユーザーIDと更新時刻だけは最初から持たせておく。
  *
  * data = {
- *   version: 1,
+ *   version: 2,
  *   userId: "u-xxxxxxxx",
  *   updatedAt: ts,
  *   accounts:      [{ id, name, purpose, baseBalance, baseDate, order, archived }],
  *   cards:         [{ id, accountId, name, note, order, archived, cardType:'credit'|'debit',
  *                      closingDay, paymentDay, paymentMonthOffset }],
- *   transactions:  [{ id, type:'expense'|'income', status:'planned'|'confirmed',
- *                      date, settleDate, accountId, cardId, amount, title, note, createdAt }],
- *   refunds:       [{ id, date, amount, source, targetTransactionId, accountId,
- *                      received, note, createdAt }],
- *   earnings:      [{ id, title, amount, earnedDate, expectedPayDate, actualPayDate,
- *                      accountId, status:'planned'|'received', note, createdAt }],
+ *   jobs:          [{ id, name, accountId, normalRate, holidayRate, defaultHours,
+ *                      closingDay, paymentDay, paymentMonthOffset, archived, note, createdAt }],
+ *   transactions:  [{ id, type:'expense'|'income'|'refund', status:'planned'|'confirmed',
+ *                      date, settleDate, accountId, amount, title, note, createdAt,
+ *                      cardId,                          // expense のみ（支払い方法）
+ *                      refundSource, targetTransactionId, // refund のみ
+ *                      jobId, shiftHours, shiftHolidayRate // income のうちバイトのシフト由来のみ
+ *                    }],
  *   subscriptions: [{ id, name, accountId, cardId, amount, billingDay, startDate,
  *                      active, note, createdAt, currency, foreignAmount, fxRate }]
  * }
+ *
+ * 入出金は「支出／収入／払い戻し」の3種類をすべて transactions の1つの配列にまとめている
+ * （以前は refunds・earnings を別配列にしていたが、3種類とも同じように予定→確定の流れを
+ * 持つべきなので、type だけが違う同じレコードとして扱う方が素直）。
  *
  * カード引き落とし日の考え方（closingDay/paymentDay/paymentMonthOffset）：
  * 「毎月closingDay日締め、paymentMonthOffsetヶ月後のpaymentDay日払い」というよくある
@@ -28,12 +34,14 @@
  * このカード情報から、取引の実際の口座引き落とし日（settleDate）を自動計算する。
  * cardType==='debit'（デビットカード）はこの締め日ルールを使わず、常に支払った翌日に
  * 引き落とされるものとして扱う。
+ * バイト（jobs）の給料日も同じ形（closingDay/paymentDay/paymentMonthOffset）で持たせ、
+ * 同じ計算式をそのまま使い回している。
  */
 (function (global) {
   'use strict';
 
   var DATA_KEY = 'moneymgt.data.v1';
-  var VERSION = 1;
+  var VERSION = 2;
 
   function newId(prefix) {
     var s = (prefix || 'id') + '-';
@@ -48,9 +56,8 @@
       updatedAt: 0,
       accounts: [],
       cards: [],
+      jobs: [],
       transactions: [],
-      refunds: [],
-      earnings: [],
       subscriptions: []
     };
   }
@@ -113,8 +120,8 @@
     return new Date(d.getFullYear(), d.getMonth() + 1, 0).getDate();
   }
 
-  /* カードの締め日・支払日から、購入日 purchaseDate の実際の口座引き落とし日を計算する。
-   * card が無ければ即日決済（purchaseDate をそのまま返す）。
+  /* カード（またはバイトの給料日ルール）の締め日・支払日から、purchaseDate の
+   * 実際の口座引き落とし／振込日を計算する。card が無ければ即日（purchaseDate をそのまま返す）。
    * デビットカードは締め日・支払日を持たず、常に翌日引き落としとして扱う。 */
   function computeCardSettleDate(purchaseDate, card) {
     if (!card) return purchaseDate;
@@ -147,6 +154,73 @@
     return results;
   }
 
+  function defaultTitleFor(type) {
+    return type === 'income' ? '収入' : (type === 'refund' ? '払い戻し' : '支出');
+  }
+
+  /* ---------------- 旧データ形式からの移行 ----------------
+   * v1: refunds・earnings が別配列だった形。それぞれ transactions（type:'refund'/'income'）に
+   * 変換して1本化する。データを絶対に失わないよう、変換できるものはすべて変換する。 */
+  function migrateToCurrent(raw) {
+    var d = Object.assign(emptyData(), raw);
+    d.jobs = Array.isArray(raw.jobs) ? raw.jobs : [];
+    d.transactions = (Array.isArray(raw.transactions) ? raw.transactions : []).map(function (t) {
+      var copy = Object.assign({}, t);
+      if (!copy.status) copy.status = 'confirmed';
+      if (!copy.type) copy.type = 'expense';
+      return copy;
+    });
+
+    (Array.isArray(raw.refunds) ? raw.refunds : []).forEach(function (r) {
+      d.transactions.push({
+        id: r.id || newId('rf'),
+        type: 'refund',
+        status: r.received ? 'confirmed' : 'planned',
+        date: r.date || todayStr(),
+        settleDate: r.date || todayStr(),
+        accountId: r.accountId,
+        cardId: null,
+        amount: r.amount || 0,
+        title: r.source || '払い戻し',
+        note: r.note || '',
+        refundSource: r.source || '',
+        targetTransactionId: r.targetTransactionId || null,
+        createdAt: r.createdAt || Date.now()
+      });
+    });
+
+    (Array.isArray(raw.earnings) ? raw.earnings : []).forEach(function (e) {
+      d.transactions.push({
+        id: e.id || newId('ea'),
+        type: 'income',
+        status: e.status === 'received' ? 'confirmed' : 'planned',
+        date: e.earnedDate || todayStr(),
+        settleDate: (e.status === 'received' && e.actualPayDate) ? e.actualPayDate : (e.expectedPayDate || e.earnedDate || todayStr()),
+        accountId: e.accountId,
+        cardId: null,
+        amount: e.amount || 0,
+        title: e.title || '収入',
+        note: e.note || '',
+        createdAt: e.createdAt || Date.now()
+      });
+    });
+
+    delete d.refunds;
+    delete d.earnings;
+    d.version = VERSION;
+    return d;
+  }
+
+  function normalizeData(raw) {
+    var d = (raw && typeof raw === 'object') ? (raw.version === VERSION ? raw : migrateToCurrent(raw)) : emptyData();
+    ['accounts', 'cards', 'jobs', 'transactions', 'subscriptions'].forEach(function (k) {
+      if (!Array.isArray(d[k])) d[k] = [];
+    });
+    if (!d.userId) d.userId = newId('u');
+    d.version = VERSION;
+    return d;
+  }
+
   /* ---------------- ストア本体 ---------------- */
 
   var Store = {
@@ -155,12 +229,10 @@
 
     load: function () {
       var saved = read(DATA_KEY, null);
-      this.data = (saved && saved.version === VERSION) ? saved : emptyData();
-      ['accounts', 'cards', 'transactions', 'refunds', 'earnings', 'subscriptions'].forEach(function (k) {
-        if (!Array.isArray(this.data[k])) this.data[k] = [];
-      }, this);
-      if (!this.data.userId) this.data.userId = newId('u');
+      var needsMigration = !!(saved && saved.version !== VERSION);
+      this.data = normalizeData(saved);
       this.rev++;
+      if (needsMigration) this.save(); // 移行後の形をすぐ保存しておく（onSave はまだ未設定なのでクラウド送信は起きない）
       return this;
     },
 
@@ -216,8 +288,7 @@
     referencesAccount: function (id) {
       return this.data.cards.some(function (c) { return c.accountId === id; }) ||
         this.data.transactions.some(function (t) { return t.accountId === id; }) ||
-        this.data.refunds.some(function (r) { return r.accountId === id; }) ||
-        this.data.earnings.some(function (e) { return e.accountId === id; }) ||
+        this.data.jobs.some(function (j) { return j.accountId === id; }) ||
         this.data.subscriptions.some(function (s) { return s.accountId === id; });
     },
 
@@ -284,12 +355,98 @@
       return this.data.cards.filter(function (c) { return !c.archived; });
     },
 
-    /* ---------- 取引（支出・収入） ---------- */
+    /* ---------- バイト・収入プロファイル ---------- */
+
+    addJob: function (fields) {
+      var j = {
+        id: newId('job'),
+        name: fields.name || '無題のバイト',
+        accountId: fields.accountId,
+        normalRate: Math.abs(Number(fields.normalRate)) || 0,
+        holidayRate: Math.abs(Number(fields.holidayRate)) || 0,
+        defaultHours: Number(fields.defaultHours) || 4.5,
+        closingDay: Math.min(31, Math.max(1, Number(fields.closingDay) || 31)),
+        paymentDay: Math.min(31, Math.max(1, Number(fields.paymentDay) || 27)),
+        paymentMonthOffset: fields.paymentMonthOffset != null ? Number(fields.paymentMonthOffset) : 1,
+        archived: false,
+        note: fields.note || '',
+        createdAt: Date.now()
+      };
+      this.data.jobs.push(j);
+      this.save();
+      return j;
+    },
+
+    updateJob: function (id, fields) {
+      var j = this.getJob(id);
+      if (!j) return null;
+      Object.assign(j, fields);
+      if (fields.normalRate != null) j.normalRate = Math.abs(Number(fields.normalRate)) || 0;
+      if (fields.holidayRate != null) j.holidayRate = Math.abs(Number(fields.holidayRate)) || 0;
+      if (fields.defaultHours != null) j.defaultHours = Number(fields.defaultHours) || 0;
+      if (fields.closingDay != null) j.closingDay = Math.min(31, Math.max(1, Number(fields.closingDay) || 31));
+      if (fields.paymentDay != null) j.paymentDay = Math.min(31, Math.max(1, Number(fields.paymentDay) || 27));
+      if (fields.paymentMonthOffset != null) j.paymentMonthOffset = Number(fields.paymentMonthOffset);
+      this.save();
+      return j;
+    },
+
+    getJob: function (id) {
+      return this.data.jobs.filter(function (j) { return j.id === id; })[0] || null;
+    },
+
+    removeJob: function (id) {
+      var used = this.data.transactions.some(function (t) { return t.jobId === id; });
+      if (used) return false;
+      this.data.jobs = this.data.jobs.filter(function (j) { return j.id !== id; });
+      this.save();
+      return true;
+    },
+
+    activeJobs: function () {
+      return this.data.jobs.filter(function (j) { return !j.archived; });
+    },
+
+    /* job の締め日・給料日ルールから、勤務日 workDate の実際の振込予定日を計算する
+     * （card 用の computeCardSettleDate をそのまま流用できる形に job を作ってあるため）。 */
+    settleDateForJob: function (workDate, jobId) {
+      return computeCardSettleDate(workDate, this.getJob(jobId));
+    },
+
+    /* シフト（勤務）を記録し、給料日ルールから振込予定日を自動計算した「予定」の
+     * 収入取引として登録する。戻り値はできた transaction。 */
+    addShift: function (fields) {
+      var job = this.getJob(fields.jobId);
+      if (!job) return null;
+      var hours = Number(fields.hours) || 0;
+      var holiday = !!fields.holidayRate;
+      var rate = holiday ? job.holidayRate : job.normalRate;
+      var date = fields.date || todayStr();
+      var amount = Math.round(hours * rate);
+      var settle = computeCardSettleDate(date, job);
+      return this.addTransaction({
+        type: 'income',
+        status: 'planned',
+        date: date,
+        settleDate: settle,
+        accountId: job.accountId,
+        amount: amount,
+        title: job.name,
+        note: fields.note || '',
+        jobId: job.id,
+        shiftHours: hours,
+        shiftHolidayRate: holiday
+      });
+    },
+
+    /* ---------- 取引（支出・収入・払い戻し） ---------- */
 
     addTransaction: function (fields) {
+      var validTypes = ['expense', 'income', 'refund'];
+      var type = validTypes.indexOf(fields.type) >= 0 ? fields.type : 'expense';
       var t = {
         id: newId('tx'),
-        type: fields.type === 'income' ? 'income' : 'expense',
+        type: type,
         status: fields.status === 'planned' ? 'planned' : 'confirmed',
         date: fields.date || todayStr(),
         settleDate: fields.settleDate || fields.date || todayStr(),
@@ -298,6 +455,11 @@
         amount: Math.abs(Number(fields.amount)) || 0,
         title: fields.title || '',
         note: fields.note || '',
+        refundSource: fields.refundSource || '',
+        targetTransactionId: fields.targetTransactionId || null,
+        jobId: fields.jobId || null,
+        shiftHours: fields.shiftHours != null ? Number(fields.shiftHours) : null,
+        shiftHolidayRate: !!fields.shiftHolidayRate,
         createdAt: Date.now()
       };
       this.data.transactions.push(t);
@@ -319,101 +481,18 @@
     },
 
     removeTransaction: function (id) {
-      this.data.refunds = this.data.refunds.filter(function (r) { return r.targetTransactionId !== id; });
+      this.data.transactions.forEach(function (t) {
+        if (t.targetTransactionId === id) t.targetTransactionId = null;
+      });
       this.data.transactions = this.data.transactions.filter(function (t) { return t.id !== id; });
       this.save();
     },
 
-    transactionsSorted: function () {
-      return this.data.transactions.slice().sort(function (a, b) {
+    /* type を渡すと 'expense'|'income'|'refund' で絞り込む。省略時は全件 */
+    transactionsSorted: function (type) {
+      var list = type ? this.data.transactions.filter(function (t) { return t.type === type; }) : this.data.transactions.slice();
+      return list.sort(function (a, b) {
         return cmpDate(b.date, a.date) || (b.createdAt - a.createdAt);
-      });
-    },
-
-    /* ---------- 払い戻し ---------- */
-
-    addRefund: function (fields) {
-      var r = {
-        id: newId('rf'),
-        date: fields.date || todayStr(),
-        amount: Math.abs(Number(fields.amount)) || 0,
-        source: fields.source || '',
-        targetTransactionId: fields.targetTransactionId || null,
-        accountId: fields.accountId,
-        received: !!fields.received,
-        note: fields.note || '',
-        createdAt: Date.now()
-      };
-      this.data.refunds.push(r);
-      this.save();
-      return r;
-    },
-
-    updateRefund: function (id, fields) {
-      var r = this.getRefund(id);
-      if (!r) return null;
-      Object.assign(r, fields);
-      if (fields.amount != null) r.amount = Math.abs(Number(fields.amount)) || 0;
-      this.save();
-      return r;
-    },
-
-    getRefund: function (id) {
-      return this.data.refunds.filter(function (r) { return r.id === id; })[0] || null;
-    },
-
-    removeRefund: function (id) {
-      this.data.refunds = this.data.refunds.filter(function (r) { return r.id !== id; });
-      this.save();
-    },
-
-    refundsSorted: function () {
-      return this.data.refunds.slice().sort(function (a, b) {
-        return cmpDate(b.date, a.date) || (b.createdAt - a.createdAt);
-      });
-    },
-
-    /* ---------- 収入予定（稼いだ／確定／入金） ---------- */
-
-    addEarning: function (fields) {
-      var e = {
-        id: newId('ea'),
-        title: fields.title || '',
-        amount: Math.abs(Number(fields.amount)) || 0,
-        earnedDate: fields.earnedDate || todayStr(),
-        expectedPayDate: fields.expectedPayDate || fields.earnedDate || todayStr(),
-        actualPayDate: fields.actualPayDate || null,
-        accountId: fields.accountId,
-        status: fields.status === 'received' ? 'received' : 'planned',
-        note: fields.note || '',
-        createdAt: Date.now()
-      };
-      this.data.earnings.push(e);
-      this.save();
-      return e;
-    },
-
-    updateEarning: function (id, fields) {
-      var e = this.getEarning(id);
-      if (!e) return null;
-      Object.assign(e, fields);
-      if (fields.amount != null) e.amount = Math.abs(Number(fields.amount)) || 0;
-      this.save();
-      return e;
-    },
-
-    getEarning: function (id) {
-      return this.data.earnings.filter(function (e) { return e.id === id; })[0] || null;
-    },
-
-    removeEarning: function (id) {
-      this.data.earnings = this.data.earnings.filter(function (e) { return e.id !== id; });
-      this.save();
-    },
-
-    earningsSorted: function () {
-      return this.data.earnings.slice().sort(function (a, b) {
-        return cmpDate(b.expectedPayDate, a.expectedPayDate) || (b.createdAt - a.createdAt);
       });
     },
 
@@ -485,17 +564,7 @@
       this.data.transactions.forEach(function (t) {
         if (t.accountId !== accountId || t.status === 'planned') return;
         if (cmpDate(t.settleDate, acc.baseDate) < 0 || cmpDate(t.settleDate, asOf) > 0) return;
-        total += t.type === 'income' ? t.amount : -t.amount;
-      });
-      this.data.refunds.forEach(function (r) {
-        if (r.accountId !== accountId || !r.received) return;
-        if (cmpDate(r.date, acc.baseDate) < 0 || cmpDate(r.date, asOf) > 0) return;
-        total += r.amount;
-      });
-      this.data.earnings.forEach(function (e) {
-        if (e.accountId !== accountId || e.status !== 'received' || !e.actualPayDate) return;
-        if (cmpDate(e.actualPayDate, acc.baseDate) < 0 || cmpDate(e.actualPayDate, asOf) > 0) return;
-        total += e.amount;
+        total += t.type === 'expense' ? -t.amount : t.amount;
       });
       return total;
     },
@@ -519,38 +588,11 @@
         if (cmpDate(t.settleDate, today) > 0 && cmpDate(t.settleDate, horizonEnd) <= 0) {
           events.push({
             date: t.settleDate,
-            label: t.title || (t.type === 'income' ? '入金' : '支出'),
-            amount: t.type === 'income' ? t.amount : -t.amount,
+            label: t.title || defaultTitleFor(t.type),
+            amount: t.type === 'expense' ? -t.amount : t.amount,
             accountId: t.accountId,
-            kind: t.type === 'income' ? 'income' : 'expense',
+            kind: t.type,
             pending: t.status === 'planned'
-          });
-        }
-      });
-
-      this.data.refunds.forEach(function (r) {
-        if (r.received) return;
-        if (cmpDate(r.date, today) >= 0 && cmpDate(r.date, horizonEnd) <= 0) {
-          events.push({
-            date: r.date,
-            label: '払い戻し：' + (r.source || '未設定'),
-            amount: r.amount,
-            accountId: r.accountId,
-            kind: 'refund'
-          });
-        }
-      });
-
-      this.data.earnings.forEach(function (e) {
-        if (e.status === 'received') return;
-        var payDate = e.expectedPayDate || e.earnedDate;
-        if (cmpDate(payDate, today) >= 0 && cmpDate(payDate, horizonEnd) <= 0) {
-          events.push({
-            date: payDate,
-            label: '収入予定：' + (e.title || '無題'),
-            amount: e.amount,
-            accountId: e.accountId,
-            kind: 'earning'
           });
         }
       });
@@ -597,38 +639,11 @@
         if (cmpDate(t.settleDate, start) >= 0 && cmpDate(t.settleDate, end) <= 0) {
           events.push({
             date: t.settleDate,
-            label: t.title || (t.type === 'income' ? '入金' : '支出'),
-            amount: t.type === 'income' ? t.amount : -t.amount,
+            label: t.title || defaultTitleFor(t.type),
+            amount: t.type === 'expense' ? -t.amount : t.amount,
             accountId: t.accountId,
-            kind: t.type === 'income' ? 'income' : 'expense',
+            kind: t.type,
             pending: t.status === 'planned'
-          });
-        }
-      });
-
-      this.data.refunds.forEach(function (r) {
-        if (cmpDate(r.date, start) >= 0 && cmpDate(r.date, end) <= 0) {
-          events.push({
-            date: r.date,
-            label: '払い戻し：' + (r.source || '未設定'),
-            amount: r.amount,
-            accountId: r.accountId,
-            kind: 'refund',
-            pending: !r.received
-          });
-        }
-      });
-
-      this.data.earnings.forEach(function (e) {
-        var d = (e.status === 'received' && e.actualPayDate) ? e.actualPayDate : e.expectedPayDate;
-        if (cmpDate(d, start) >= 0 && cmpDate(d, end) <= 0) {
-          events.push({
-            date: d,
-            label: '収入予定：' + (e.title || '無題'),
-            amount: e.amount,
-            accountId: e.accountId,
-            kind: 'earning',
-            pending: e.status !== 'received'
           });
         }
       });
@@ -668,7 +683,7 @@
       this.data.transactions.forEach(function (t) {
         if (!t.cardId || !totals[t.cardId]) return;
         if (cmpDate(t.settleDate, start) < 0 || cmpDate(t.settleDate, end) > 0) return;
-        var amt = t.type === 'income' ? -t.amount : t.amount;
+        var amt = t.type === 'expense' ? t.amount : -t.amount;
         if (t.status === 'planned') totals[t.cardId].planned += amt;
         else totals[t.cardId].confirmed += amt;
       });
@@ -686,14 +701,19 @@
       });
     },
 
-    /* 特定の1日・特定の口座の残高（過去はそのまま実績、未来はその日までのイベントを積算） */
-    accountBalanceOnDate: function (accountId, dateStr) {
+    /* 特定の1日・特定の口座の残高。
+     * includePlanned=true 「実質残高」：予定ステータスの入出金も、その日までに来ていれば加味する。
+     * includePlanned=false「実際の口座残高」：確定した入出金だけで計算する。
+     * 過去日はどちらの意味でも同じ（accountBalance が既に確定分だけを積算しているため）。 */
+    accountBalanceOnDate: function (accountId, dateStr, includePlanned) {
       var today = todayStr();
       if (cmpDate(dateStr, today) <= 0) return this.accountBalance(accountId, dateStr);
       var total = this.accountBalance(accountId, today);
       var events = this.upcomingEvents(daysBetween(today, dateStr));
       events.forEach(function (ev) {
-        if (ev.accountId === accountId && cmpDate(ev.date, dateStr) <= 0) total += ev.amount;
+        if (ev.accountId !== accountId || cmpDate(ev.date, dateStr) > 0) return;
+        if (!includePlanned && ev.pending) return;
+        total += ev.amount;
       });
       return total;
     },
@@ -715,7 +735,7 @@
         throw new Error('MoneyMGTのバックアップ形式ではありません');
       }
       var userId = this.data.userId;
-      this.data = Object.assign(emptyData(), incoming);
+      this.data = normalizeData(incoming);
       this.data.userId = incoming.userId || userId;
       this.save();
     }
@@ -781,11 +801,8 @@
   /* リモートのデータでこの端末のデータを丸ごと置き換える */
   Store.applyRemote = function (remoteData) {
     var localUserId = this.data.userId;
-    this.data = Object.assign(emptyData(), remoteData);
-    ['accounts', 'cards', 'transactions', 'refunds', 'earnings', 'subscriptions'].forEach(function (k) {
-      if (!Array.isArray(this.data[k])) this.data[k] = [];
-    }, this);
-    if (!this.data.userId) this.data.userId = localUserId;
+    this.data = normalizeData(remoteData);
+    if (!remoteData || !remoteData.userId) this.data.userId = localUserId;
     try {
       localStorage.setItem(DATA_KEY, JSON.stringify(this.data));
     } catch (e) {

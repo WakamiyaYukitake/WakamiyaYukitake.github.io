@@ -227,7 +227,6 @@ button, input, select, textarea { font-family: inherit; }
 .segment { display: flex; gap: 6px; background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 4px; }
 .segment-btn { flex: 1; border: 0; background: transparent; color: var(--muted); padding: 8px; border-radius: 8px; font-size: 13px; cursor: pointer; }
 .segment-btn.active { background: var(--panel-3); color: var(--text); font-weight: 700; }
-.tab-body[hidden] { display: none; }
 
 /* ---------- 下部バー / FAB ---------- */
 #bottombar {

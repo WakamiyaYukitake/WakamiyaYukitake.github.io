@@ -33,6 +33,10 @@
           <div class="panel-head">
             <h2>カレンダーで見る</h2>
           </div>
+          <div class="segment" id="cal-balance-mode">
+            <button class="segment-btn active" data-mode="effective">実質残高</button>
+            <button class="segment-btn" data-mode="actual">実際の口座残高</button>
+          </div>
           <div class="cal-head">
             <button id="cal-prev" class="icon-btn small" aria-label="前の月">‹</button>
             <div id="cal-title" class="cal-title"></div>
@@ -55,24 +59,26 @@
         </section>
       </section>
 
-      <!-- 入出（取引・払い戻し） -->
+      <!-- 入出（支出・収入・払い戻し） -->
       <section id="view-ledger" class="view" hidden>
         <div class="segment" id="ledger-tabs">
-          <button class="segment-btn active" data-ledger-tab="tx">取引</button>
-          <button class="segment-btn" data-ledger-tab="refund">払い戻し</button>
+          <button class="segment-btn active" data-kind="expense">支出</button>
+          <button class="segment-btn" data-kind="income">収入</button>
+          <button class="segment-btn" data-kind="refund">払い戻し</button>
         </div>
-        <div id="ledger-tx" class="tab-body">
-          <div id="tx-list" class="entry-list"></div>
-        </div>
-        <div id="ledger-refund" class="tab-body" hidden>
-          <div id="refund-list" class="entry-list"></div>
-        </div>
+        <div id="ledger-list" class="entry-list"></div>
       </section>
 
-      <!-- 収入予定 -->
-      <section id="view-earnings" class="view" hidden>
-        <p class="note intro">「稼いだ／稼ぐ予定」を先に登録しておき、実際に振り込まれたら「入金済み」にできます。</p>
-        <div id="earnings-list" class="entry-list"></div>
+      <!-- バイト（シフト記録） -->
+      <section id="view-jobs" class="view" hidden>
+        <p class="note intro">バイト先を登録しておけば、働いた日と時間を入力するだけで自動的に金額を計算し、収入（予定）として登録します。フリーランスやUber Eatsなど不定期な収入は「入出」タブの収入から個別に入力してください。</p>
+        <div id="jobs-list" class="list-mini"></div>
+        <div class="btn-row"><button class="btn full" id="btn-add-job">＋ バイト先を追加</button></div>
+
+        <section class="panel">
+          <div class="panel-head"><h2>シフト履歴</h2></div>
+          <div id="shifts-list" class="entry-list"></div>
+        </section>
       </section>
 
       <!-- サブスク -->
@@ -90,8 +96,8 @@
       <button class="bar-btn" data-view="ledger">
         <span class="bar-icon">📝</span><span class="bar-text">入出</span>
       </button>
-      <button class="bar-btn" data-view="earnings">
-        <span class="bar-icon">📅</span><span class="bar-text">収入予定</span>
+      <button class="bar-btn" data-view="jobs">
+        <span class="bar-icon">💼</span><span class="bar-text">バイト</span>
       </button>
       <button class="bar-btn" data-view="subs">
         <span class="bar-icon">🔁</span><span class="bar-text">サブスク</span>

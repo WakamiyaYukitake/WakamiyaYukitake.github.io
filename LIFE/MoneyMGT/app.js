@@ -5,19 +5,22 @@
   var S = MoneyStore.load();
   var U = MoneyStore.util;
 
-  var APP_VERSION = 'v1.3.0';
+  var APP_VERSION = 'v2.0.0';
   var ACCOUNT_COLORS = ['#3ea6ff', '#ff8a3d', '#4cd08a', '#c792ea', '#ffd166', '#ef476f'];
   /* 外貨サブスク用の概算レート（1通貨あたり円）。ユーザーが選んだときの初期値で、後から自由に編集できる。 */
   var FX_PRESETS = { JPY: 1, USD: 150, EUR: 160, GBP: 190, KRW: 0.11, CNY: 21, AUD: 100 };
   var PAYMENT_OFFSET_LABELS = ['当月', '翌月', '翌々月', '3ヶ月後'];
+  var CURRENCIES = ['JPY', 'USD', 'EUR', 'GBP', 'KRW', 'CNY', 'AUD'];
+  var KIND_COLOR = { expense: '#ff6b6b', income: '#4cd08a', refund: '#3ea6ff', subscription: '#ff8a3d' };
 
   var todayD = new Date();
   var state = {
     view: 'overview',
-    ledgerTab: 'tx',
+    ledgerKind: 'expense',
     calYear: todayD.getFullYear(),
     calMonth: todayD.getMonth() + 1, // 1-12
     calSelected: U.todayStr(),
+    calBalanceMode: 'effective', // 'effective'(実質残高) | 'actual'(実際の口座残高)
     cardTotalsMode: 'confirmed'
   };
 
@@ -58,6 +61,9 @@
     if (d.getFullYear() !== new Date().getFullYear()) out = d.getFullYear() + '/' + out;
     return out;
   }
+  function defaultTitleFor(type) {
+    return type === 'income' ? '収入' : (type === 'refund' ? '払い戻し' : '支出');
+  }
   function accountColor(id) {
     var idx = S.data.accounts.findIndex(function (a) { return a.id === id; });
     return ACCOUNT_COLORS[Math.max(0, idx) % ACCOUNT_COLORS.length];
@@ -77,6 +83,13 @@
     var closing = c.closingDay >= 31 ? '月末' : c.closingDay + '日';
     var payment = c.paymentDay >= 31 ? '月末' : c.paymentDay + '日';
     var offsetLabel = PAYMENT_OFFSET_LABELS[c.paymentMonthOffset] || (c.paymentMonthOffset + 'ヶ月後');
+    return closing + '締め ・ ' + offsetLabel + payment + '払い';
+  }
+  function payCycleLabel(j) {
+    if (!j) return '';
+    var closing = j.closingDay >= 31 ? '月末' : j.closingDay + '日';
+    var payment = j.paymentDay >= 31 ? '月末' : j.paymentDay + '日';
+    var offsetLabel = PAYMENT_OFFSET_LABELS[j.paymentMonthOffset] || (j.paymentMonthOffset + 'ヶ月後');
     return closing + '締め ・ ' + offsetLabel + payment + '払い';
   }
 
@@ -211,7 +224,6 @@
     renderCardTotals();
   }
 
-  var KIND_COLOR = { income: '#4cd08a', expense: '#ff6b6b', refund: '#3ea6ff', earning: '#ffd166', subscription: '#ff8a3d' };
   function eventRowHtml(ev) {
     var cls = ev.amount >= 0 ? 'amt-pos' : 'amt-neg';
     var badge = ev.pending ? '<span class="badge planned">予定</span>' : '';
@@ -227,6 +239,10 @@
   function renderCalendar() {
     var y = state.calYear, m = state.calMonth;
     $('cal-title').textContent = y + '年' + m + '月';
+    $('cal-balance-mode').querySelectorAll('.segment-btn').forEach(function (b) {
+      b.classList.toggle('active', b.getAttribute('data-mode') === state.calBalanceMode);
+    });
+    var includePlanned = state.calBalanceMode !== 'actual';
 
     var events = S.monthEvents(y, m);
     var byDate = {};
@@ -243,7 +259,8 @@
     for (var d = 1; d <= lastDay; d++) {
       var dateStr = y + '-' + (m < 10 ? '0' + m : m) + '-' + (d < 10 ? '0' + d : d);
       var dayEvents = byDate[dateStr] || [];
-      var net = dayEvents.reduce(function (sum, ev) { return sum + ev.amount; }, 0);
+      var counted = includePlanned ? dayEvents : dayEvents.filter(function (e) { return !e.pending; });
+      var net = counted.reduce(function (sum, ev) { return sum + ev.amount; }, 0);
       var cls = 'cal-day';
       if (dateStr === today) cls += ' today';
       if (dateStr === state.calSelected) cls += ' selected';
@@ -267,30 +284,40 @@
 
   function renderCalDetail(dayEvents) {
     var dateStr = state.calSelected;
+    var includePlanned = state.calBalanceMode !== 'actual';
     var accounts = S.activeAccounts();
     var balHtml = accounts.map(function (a) {
-      var bal = S.accountBalanceOnDate(a.id, dateStr);
+      var bal = S.accountBalanceOnDate(a.id, dateStr, includePlanned);
       return '<div class="cal-bal-row">' +
         '<span class="dot" style="background:' + accountColor(a.id) + '"></span>' +
         '<span class="cal-bal-name">' + esc(a.name) + '</span>' +
         '<span class="cal-bal-amt">' + fmtYen(bal) + '</span></div>';
     }).join('');
 
-    var income = dayEvents.filter(function (e) { return e.amount > 0; }).reduce(function (s, e) { return s + e.amount; }, 0);
-    var expense = dayEvents.filter(function (e) { return e.amount < 0; }).reduce(function (s, e) { return s + e.amount; }, 0);
+    var counted = includePlanned ? dayEvents : dayEvents.filter(function (e) { return !e.pending; });
+    var income = counted.filter(function (e) { return e.amount > 0; }).reduce(function (s, e) { return s + e.amount; }, 0);
+    var expense = counted.filter(function (e) { return e.amount < 0; }).reduce(function (s, e) { return s + e.amount; }, 0);
     var isFuture = U.cmpDate(dateStr, U.todayStr()) > 0;
+    var modeLabel = includePlanned ? '実質残高' : '実際の口座残高';
 
-    var head = '<div class="cal-detail-head">' + fmtDateShort(dateStr) + (isFuture ? ' 時点の予測残高' : ' 時点の残高') + '</div>' +
+    var head = '<div class="cal-detail-head">' + fmtDateShort(dateStr) + (isFuture ? ' 時点の予測' : ' 時点の') + modeLabel + '</div>' +
       '<div class="cal-bal-list">' + balHtml + '</div>' +
       '<div class="stat-row">' +
       '<div><div class="stat-label">この日の収入</div><div class="stat-value pos">' + fmtYen(income) + '</div></div>' +
       '<div><div class="stat-label">この日の支出</div><div class="stat-value neg">' + fmtYen(Math.abs(expense)) + '</div></div>' +
       '</div>';
-    var listHead = '<div class="cal-detail-head">内訳</div>';
+    var listHead = '<div class="cal-detail-head">内訳（予定も含む全件）</div>';
     var body = dayEvents.length ? dayEvents.map(eventRowHtml).join('') :
       '<div class="empty-state">この日の入出金はありません</div>';
     $('cal-detail').innerHTML = head + listHead + body;
   }
+
+  $('cal-balance-mode').addEventListener('click', function (e) {
+    var btn = e.target.closest('.segment-btn');
+    if (!btn) return;
+    state.calBalanceMode = btn.getAttribute('data-mode');
+    renderCalendar();
+  });
 
   $('cal-prev').addEventListener('click', function () { shiftCalMonth(-1); });
   $('cal-next').addEventListener('click', function () { shiftCalMonth(1); });
@@ -325,40 +352,52 @@
     renderCardTotals();
   });
 
-  /* ---------------- 描画：入出（取引・払い戻し） ---------------- */
+  /* ---------------- 取引の行表示（支出・収入・払い戻し・シフト 共通） ---------------- */
 
-  function renderLedger() {
-    $('ledger-tabs').querySelectorAll('.segment-btn').forEach(function (b) {
-      b.classList.toggle('active', b.getAttribute('data-ledger-tab') === state.ledgerTab);
-    });
-    $('ledger-tx').hidden = state.ledgerTab !== 'tx';
-    $('ledger-refund').hidden = state.ledgerTab !== 'refund';
+  function txRowHtml(t) {
+    var refundedTotal = t.type === 'expense' ? S.data.transactions
+      .filter(function (x) { return x.type === 'refund' && x.targetTransactionId === t.id; })
+      .reduce(function (sum, x) { return sum + x.amount; }, 0) : 0;
+    var badges = (refundedTotal > 0 ? '<span class="badge received">払戻 ' + fmtYen(refundedTotal) + '</span>' : '') +
+      (t.status === 'planned' ? '<span class="badge planned">予定</span>' : '');
+    var isOut = t.type === 'expense';
+    var cls = isOut ? 'amt-neg' : 'amt-pos';
+    var sign = isOut ? '-' : '+';
 
-    var txs = S.transactionsSorted();
-    $('tx-list').innerHTML = txs.length ? txs.map(function (t) {
-      var refunded = S.data.refunds.filter(function (r) { return r.targetTransactionId === t.id; })
-        .reduce(function (sum, r) { return sum + r.amount; }, 0);
-      var badges = (refunded > 0 ? '<span class="badge received">払戻 ' + fmtYen(refunded) + '</span>' : '') +
-        (t.status === 'planned' ? '<span class="badge planned">予定</span>' : '');
-      var cls = t.type === 'income' ? 'amt-pos' : 'amt-neg';
-      var sign = t.type === 'income' ? '+' : '-';
-      var sub = fmtDateShort(t.date) + ' ・ ' + esc(accountName(t.accountId)) + (t.cardId ? ' ・ ' + esc(cardName(t.cardId)) : '') +
-        (t.settleDate !== t.date ? '（引落 ' + fmtDateShort(t.settleDate) + '）' : '');
-      var confirmBtn = t.status === 'planned' ? '<button class="btn small" data-confirm-tx="' + t.id + '">確定にする</button>' : '';
-      return '<div class="entry-row" data-tx-id="' + t.id + '">' +
-        '<span class="kind-dot" style="background:' + (t.type === 'income' ? KIND_COLOR.income : KIND_COLOR.expense) + '"></span>' +
-        '<div class="ev-info"><div class="ev-title">' + esc(t.title || (t.type === 'income' ? '入金' : '支出')) + badges + '</div>' +
-        '<div class="ev-sub">' + sub + '</div></div>' +
-        confirmBtn +
-        '<div class="ev-amount ' + cls + '">' + sign + fmtYen(t.amount) + '</div></div>';
-    }).join('') : '<div class="empty-state">取引がまだありません</div>';
+    var subParts = [fmtDateShort(t.date), esc(accountName(t.accountId))];
+    if (t.type === 'expense' && t.cardId) subParts.push(esc(cardName(t.cardId)));
+    if (t.type === 'refund') {
+      var target = t.targetTransactionId ? S.getTransaction(t.targetTransactionId) : null;
+      subParts.push('元：' + esc(t.refundSource || '未設定') + (target ? '／対象：' + esc(target.title || '取引') : ''));
+    }
+    if (t.type === 'income' && t.jobId) {
+      var job = S.getJob(t.jobId);
+      subParts.push((job ? esc(job.name) : '（削除されたバイト）') +
+        (t.shiftHours != null ? ' ・ ' + t.shiftHours + '時間' + (t.shiftHolidayRate ? '（日祝レート）' : '') : ''));
+    }
+    if (t.settleDate !== t.date) subParts.push((isOut ? '引落 ' : '入金 ') + fmtDateShort(t.settleDate));
+    var sub = subParts.join(' ・ ');
+    var confirmBtn = t.status === 'planned' ? '<button class="btn small" data-confirm-tx="' + t.id + '">確定にする</button>' : '';
 
-    $('tx-list').querySelectorAll('.entry-row').forEach(function (row) {
+    return '<div class="entry-row" data-tx-id="' + t.id + '">' +
+      '<span class="kind-dot" style="background:' + (KIND_COLOR[t.type] || '#888') + '"></span>' +
+      '<div class="ev-info"><div class="ev-title">' + esc(t.title || defaultTitleFor(t.type)) + badges + '</div>' +
+      '<div class="ev-sub">' + sub + '</div></div>' +
+      confirmBtn +
+      '<div class="ev-amount ' + cls + '">' + sign + fmtYen(t.amount) + '</div></div>';
+  }
+
+  function bindEntryRowEvents(container) {
+    container.querySelectorAll('.entry-row').forEach(function (row) {
       row.addEventListener('click', function () {
-        openTransactionForm(S.getTransaction(row.getAttribute('data-tx-id')));
+        var tx = S.getTransaction(row.getAttribute('data-tx-id'));
+        if (!tx) return;
+        if (tx.jobId) openShiftForm(tx);
+        else if (tx.type === 'refund') openRefundForm(tx);
+        else openTransactionForm(tx);
       });
     });
-    $('tx-list').querySelectorAll('[data-confirm-tx]').forEach(function (btn) {
+    container.querySelectorAll('[data-confirm-tx]').forEach(function (btn) {
       btn.addEventListener('click', function (e) {
         e.stopPropagation();
         S.updateTransaction(btn.getAttribute('data-confirm-tx'), { status: 'confirmed' });
@@ -366,56 +405,52 @@
         toast('確定にしました');
       });
     });
+  }
 
-    var refunds = S.refundsSorted();
-    $('refund-list').innerHTML = refunds.length ? refunds.map(function (r) {
-      var target = r.targetTransactionId ? S.getTransaction(r.targetTransactionId) : null;
-      var badge = '<span class="badge ' + (r.received ? 'received' : 'planned') + '">' + (r.received ? '受領済み' : '予定') + '</span>';
-      var sub = fmtDateShort(r.date) + ' ・ ' + esc(accountName(r.accountId)) + (target ? ' ・ 対象：' + esc(target.title || '取引') : '');
-      return '<div class="entry-row" data-refund-id="' + r.id + '">' +
-        '<span class="kind-dot" style="background:' + KIND_COLOR.refund + '"></span>' +
-        '<div class="ev-info"><div class="ev-title">' + esc(r.source || '払い戻し') + badge + '</div>' +
-        '<div class="ev-sub">' + sub + '</div></div>' +
-        '<div class="ev-amount amt-pos">+' + fmtYen(r.amount) + '</div></div>';
-    }).join('') : '<div class="empty-state">払い戻しの記録はまだありません</div>';
+  /* ---------------- 描画：入出（支出・収入・払い戻し） ---------------- */
 
-    $('refund-list').querySelectorAll('.entry-row').forEach(function (row) {
-      row.addEventListener('click', function () {
-        openRefundForm(S.getRefund(row.getAttribute('data-refund-id')));
-      });
+  var LEDGER_EMPTY = { expense: '支出の記録はまだありません', income: '収入の記録はまだありません', refund: '払い戻しの記録はまだありません' };
+
+  function renderLedger() {
+    $('ledger-tabs').querySelectorAll('.segment-btn').forEach(function (b) {
+      b.classList.toggle('active', b.getAttribute('data-kind') === state.ledgerKind);
     });
+    var list = S.transactionsSorted(state.ledgerKind);
+    $('ledger-list').innerHTML = list.length ? list.map(txRowHtml).join('') :
+      '<div class="empty-state">' + LEDGER_EMPTY[state.ledgerKind] + '</div>';
+    bindEntryRowEvents($('ledger-list'));
   }
 
   $('ledger-tabs').addEventListener('click', function (e) {
     var btn = e.target.closest('.segment-btn');
     if (!btn) return;
-    state.ledgerTab = btn.getAttribute('data-ledger-tab');
+    state.ledgerKind = btn.getAttribute('data-kind');
     renderLedger();
   });
 
-  /* ---------------- 描画：収入予定 ---------------- */
+  /* ---------------- 描画：バイト（シフト記録） ---------------- */
 
-  function renderEarnings() {
-    var list = S.earningsSorted();
-    $('earnings-list').innerHTML = list.length ? list.map(function (e) {
-      var badge = '<span class="badge ' + (e.status === 'received' ? 'received' : 'planned') + '">' +
-        (e.status === 'received' ? '入金済み' : '予定') + '</span>';
-      var sub = '稼いだ日 ' + fmtDateShort(e.earnedDate) + ' → 振込予定 ' + fmtDateShort(e.expectedPayDate) +
-        (e.status === 'received' && e.actualPayDate ? '（実際：' + fmtDateShort(e.actualPayDate) + '）' : '') +
-        ' ・ ' + esc(accountName(e.accountId));
-      return '<div class="entry-row" data-earning-id="' + e.id + '">' +
-        '<span class="kind-dot" style="background:' + KIND_COLOR.earning + '"></span>' +
-        '<div class="ev-info"><div class="ev-title">' + esc(e.title || '収入') + badge + '</div>' +
-        '<div class="ev-sub">' + sub + '</div></div>' +
-        '<div class="ev-amount amt-pos">+' + fmtYen(e.amount) + '</div></div>';
-    }).join('') : '<div class="empty-state">収入予定はまだありません</div>';
+  function renderJobs() {
+    var jobs = S.activeJobs();
+    $('jobs-list').innerHTML = jobs.length ? jobs.map(function (j) {
+      var sub = '平日¥' + j.normalRate.toLocaleString('ja-JP') + '/h ・ 日祝¥' + j.holidayRate.toLocaleString('ja-JP') + '/h ・ ' +
+        esc(accountName(j.accountId)) + ' ・ ' + esc(payCycleLabel(j));
+      return '<div class="mini-row"><span>' + esc(j.name) + '<br><span class="cal-detail-head">' + sub + '</span></span>' +
+        '<div class="mini-actions"><button data-edit-job="' + j.id + '">編集</button></div></div>';
+    }).join('') : '<div class="empty-state">バイト先がまだ登録されていません</div>';
 
-    $('earnings-list').querySelectorAll('.entry-row').forEach(function (row) {
-      row.addEventListener('click', function () {
-        openEarningForm(S.getEarning(row.getAttribute('data-earning-id')));
-      });
+    $('jobs-list').querySelectorAll('[data-edit-job]').forEach(function (btn) {
+      btn.addEventListener('click', function () { openJobForm(S.getJob(btn.getAttribute('data-edit-job'))); });
     });
+
+    var shifts = S.data.transactions.filter(function (t) { return !!t.jobId; })
+      .sort(function (a, b) { return U.cmpDate(b.date, a.date) || (b.createdAt - a.createdAt); });
+    $('shifts-list').innerHTML = shifts.length ? shifts.map(txRowHtml).join('') :
+      '<div class="empty-state">シフトの記録はまだありません</div>';
+    bindEntryRowEvents($('shifts-list'));
   }
+
+  $('btn-add-job').addEventListener('click', function () { openJobForm(null); });
 
   /* ---------------- 描画：サブスク ---------------- */
 
@@ -449,7 +484,7 @@
     renderTopbar();
     renderOverview();
     renderLedger();
-    renderEarnings();
+    renderJobs();
     renderSubs();
   }
 
@@ -474,10 +509,10 @@
     if (state.view === 'overview') {
       openQuickAddChooser();
     } else if (state.view === 'ledger') {
-      if (state.ledgerTab === 'refund') openRefundForm(null);
-      else openTransactionForm(null);
-    } else if (state.view === 'earnings') {
-      openEarningForm(null);
+      if (state.ledgerKind === 'refund') openRefundForm(null);
+      else openTransactionForm(null, state.ledgerKind);
+    } else if (state.view === 'jobs') {
+      openShiftForm(null);
     } else if (state.view === 'subs') {
       openSubscriptionForm(null);
     }
@@ -485,9 +520,10 @@
 
   function openQuickAddChooser() {
     var html = '<div class="list-mini">' +
-      '<div class="mini-row"><span>取引（支出・収入）を追加</span><div class="mini-actions"><button data-act="tx">開く</button></div></div>' +
+      '<div class="mini-row"><span>支出を追加</span><div class="mini-actions"><button data-act="expense">開く</button></div></div>' +
+      '<div class="mini-row"><span>収入を追加</span><div class="mini-actions"><button data-act="income">開く</button></div></div>' +
       '<div class="mini-row"><span>払い戻しを追加</span><div class="mini-actions"><button data-act="refund">開く</button></div></div>' +
-      '<div class="mini-row"><span>収入予定を追加</span><div class="mini-actions"><button data-act="earning">開く</button></div></div>' +
+      '<div class="mini-row"><span>バイトのシフトを記録</span><div class="mini-actions"><button data-act="shift">開く</button></div></div>' +
       '<div class="mini-row"><span>サブスクを追加</span><div class="mini-actions"><button data-act="sub">開く</button></div></div>' +
       '<div class="mini-row"><span>口座を追加</span><div class="mini-actions"><button data-act="account">開く</button></div></div>' +
       '</div>';
@@ -497,9 +533,10 @@
           var act = btn.getAttribute('data-act');
           closeSheet();
           setTimeout(function () {
-            if (act === 'tx') openTransactionForm(null);
+            if (act === 'expense') openTransactionForm(null, 'expense');
+            else if (act === 'income') openTransactionForm(null, 'income');
             else if (act === 'refund') openRefundForm(null);
-            else if (act === 'earning') openEarningForm(null);
+            else if (act === 'shift') openShiftForm(null);
             else if (act === 'sub') openSubscriptionForm(null);
             else if (act === 'account') openAccountForm(null);
           }, 120);
@@ -644,12 +681,12 @@
 
   /* ---------------- フォーム：取引（支出・収入） ---------------- */
 
-  function openTransactionForm(existing) {
+  function openTransactionForm(existing, defaultType) {
     var t = existing || {
-      type: 'expense', status: 'confirmed', date: U.todayStr(), settleDate: U.todayStr(),
+      type: defaultType || 'expense', status: 'confirmed', date: U.todayStr(), settleDate: U.todayStr(),
       accountId: (S.activeAccounts()[0] || {}).id || '', cardId: null, amount: '', title: '', note: ''
     };
-    var type = t.type;
+    var type = t.type === 'income' ? 'income' : 'expense';
     var status = t.status || 'confirmed';
 
     function fieldsHtml() {
@@ -661,11 +698,11 @@
         '<button type="button" data-status="planned" class="' + (status === 'planned' ? 'active' : '') + '">予定</button>' +
         '<button type="button" data-status="confirmed" class="' + (status === 'confirmed' ? 'active' : '') + '">確定</button>' +
         '</div>' +
-        '<div class="field"><label>内容（何に対して／何の入金か）</label><input type="text" id="f-title" value="' + esc(t.title) + '" placeholder="例：教科書代 / アルバイト代" /></div>' +
+        '<div class="field"><label>内容（何に対して／何の入金か）</label><input type="text" id="f-title" value="' + esc(t.title) + '" placeholder="例：教科書代 / フリーランス報酬" /></div>' +
         '<div class="field"><label>金額</label><input type="number" id="f-amount" value="' + t.amount + '" /></div>' +
         '<div class="field-row">' +
-        '<div class="field"><label>日付（購入日／入金日）</label><input type="date" id="f-date" value="' + t.date + '" /></div>' +
-        '<div class="field"><label>口座反映日（引き落とし日）</label><input type="date" id="f-settle" value="' + t.settleDate + '" /></div>' +
+        '<div class="field"><label>日付（購入日／稼いだ日）</label><input type="date" id="f-date" value="' + t.date + '" /></div>' +
+        '<div class="field"><label>口座反映日（引き落とし／入金日）</label><input type="date" id="f-settle" value="' + t.settleDate + '" /></div>' +
         '</div>' +
         '<div class="field"><label>口座</label><select id="f-account">' + accountOptions(t.accountId) + '</select></div>' +
         (type === 'expense' ? '<div class="field"><label>クレジットカード（任意）</label><select id="f-card">' + cardOptions(t.cardId) + '</select></div>' : '') +
@@ -743,7 +780,7 @@
       var del = body.querySelector('#f-delete');
       if (del) {
         del.addEventListener('click', function () {
-          if (!confirm('この取引を削除しますか？（紐づく払い戻しの参照も外れます）')) return;
+          if (!confirm('この取引を削除しますか？（この取引を対象にした払い戻しがあれば、対象指定だけ外れます）')) return;
           S.removeTransaction(existing.id);
           closeSheet();
           renderAll();
@@ -756,25 +793,29 @@
   /* ---------------- フォーム：払い戻し ---------------- */
 
   function openRefundForm(existing) {
-    var expenseTx = S.transactionsSorted().filter(function (t) { return t.type === 'expense'; });
+    var expenseTx = S.transactionsSorted('expense');
     var r = existing || {
-      date: U.todayStr(), amount: '', source: '', targetTransactionId: expenseTx[0] ? expenseTx[0].id : null,
-      accountId: (S.activeAccounts()[0] || {}).id || '', received: false, note: ''
+      date: U.todayStr(), amount: '', refundSource: '', targetTransactionId: expenseTx[0] ? expenseTx[0].id : null,
+      accountId: (S.activeAccounts()[0] || {}).id || '', status: 'planned', note: ''
     };
+    var status = r.status || 'planned';
     var txOptions = '<option value="">（対象取引を選ばない）</option>' + expenseTx.map(function (t) {
       var sel = t.id === r.targetTransactionId ? ' selected' : '';
       return '<option value="' + t.id + '"' + sel + '>' + fmtDateShort(t.date) + ' ' + esc(t.title || '支出') + ' ' + fmtYen(t.amount) + '</option>';
     }).join('');
 
     var html =
-      '<div class="field"><label>対象の取引</label><select id="f-target">' + txOptions + '</select></div>' +
-      '<div class="field"><label>払い戻し元（どこから）</label><input type="text" id="f-source" value="' + esc(r.source) + '" placeholder="例：大学" /></div>' +
+      '<div class="toggle-row" id="f-status">' +
+      '<button type="button" data-status="planned" class="' + (status === 'planned' ? 'active' : '') + '">予定</button>' +
+      '<button type="button" data-status="confirmed" class="' + (status === 'confirmed' ? 'active' : '') + '">確定</button>' +
+      '</div>' +
+      '<div class="field"><label>対象の取引（任意）</label><select id="f-target">' + txOptions + '</select></div>' +
+      '<div class="field"><label>払い戻し元（どこから）</label><input type="text" id="f-source" value="' + esc(r.refundSource || '') + '" placeholder="例：大学" /></div>' +
       '<div class="field-row">' +
       '<div class="field"><label>金額</label><input type="number" id="f-amount" value="' + r.amount + '" /></div>' +
-      '<div class="field"><label>日付（予定／受領日）</label><input type="date" id="f-date" value="' + r.date + '" /></div>' +
+      '<div class="field"><label>日付（予定日／受領日）</label><input type="date" id="f-date" value="' + r.date + '" /></div>' +
       '</div>' +
       '<div class="field"><label>入金先口座</label><select id="f-account">' + accountOptions(r.accountId) + '</select></div>' +
-      '<div class="checkbox-row"><input type="checkbox" id="f-received"' + (r.received ? ' checked' : '') + ' /><label for="f-received">すでに受け取った</label></div>' +
       '<div class="field"><label>メモ</label><textarea id="f-note">' + esc(r.note) + '</textarea></div>' +
       '<div class="sheet-actions">' +
       '<button class="btn primary" id="f-save">保存</button>' +
@@ -782,22 +823,33 @@
       '</div>';
 
     openSheet(existing ? '払い戻しを編集' : '払い戻しを追加', html, function (body) {
+      body.querySelectorAll('#f-status button').forEach(function (btn) {
+        btn.addEventListener('click', function () {
+          status = btn.getAttribute('data-status');
+          body.querySelectorAll('#f-status button').forEach(function (b) { b.classList.toggle('active', b === btn); });
+        });
+      });
       body.querySelector('#f-target').addEventListener('change', function () {
         var tx = S.getTransaction(this.value);
         if (tx && !body.querySelector('#f-amount').value) body.querySelector('#f-amount').value = tx.amount;
         if (tx) body.querySelector('#f-account').value = tx.accountId;
       });
       body.querySelector('#f-save').addEventListener('click', function () {
+        var date = body.querySelector('#f-date').value || U.todayStr();
+        var source = body.querySelector('#f-source').value.trim();
         var fields = {
+          type: 'refund',
+          status: status,
           targetTransactionId: body.querySelector('#f-target').value || null,
-          source: body.querySelector('#f-source').value.trim(),
+          refundSource: source,
+          title: source || '払い戻し',
           amount: Number(body.querySelector('#f-amount').value) || 0,
-          date: body.querySelector('#f-date').value || U.todayStr(),
+          date: date,
+          settleDate: date,
           accountId: body.querySelector('#f-account').value,
-          received: !!body.querySelector('#f-received').checked,
           note: body.querySelector('#f-note').value.trim()
         };
-        if (existing) S.updateRefund(existing.id, fields); else S.addRefund(fields);
+        if (existing) S.updateTransaction(existing.id, fields); else S.addTransaction(fields);
         closeSheet();
         renderAll();
         toast('払い戻しを保存しました');
@@ -806,7 +858,7 @@
       if (del) {
         del.addEventListener('click', function () {
           if (!confirm('この払い戻しを削除しますか？')) return;
-          S.removeRefund(existing.id);
+          S.removeTransaction(existing.id);
           closeSheet();
           renderAll();
           toast('払い戻しを削除しました');
@@ -815,29 +867,110 @@
     });
   }
 
-  /* ---------------- フォーム：収入予定 ---------------- */
+  /* ---------------- フォーム：バイト先 ---------------- */
 
-  function openEarningForm(existing) {
-    var e = existing || {
-      title: '', amount: '', earnedDate: U.todayStr(), expectedPayDate: U.todayStr(),
-      actualPayDate: null, accountId: (S.activeAccounts()[0] || {}).id || '', status: 'planned', note: ''
+  function openJobForm(existing) {
+    var j = existing || {
+      name: '', accountId: (S.activeAccounts()[0] || {}).id || '', normalRate: '', holidayRate: '',
+      defaultHours: 4.5, closingDay: 31, paymentDay: 25, paymentMonthOffset: 1, note: '', archived: false
     };
-    var status = e.status;
+    var offsetOptions = PAYMENT_OFFSET_LABELS.map(function (label, i) {
+      return '<option value="' + i + '"' + (i === j.paymentMonthOffset ? ' selected' : '') + '>' + label + '</option>';
+    }).join('');
+    var html =
+      '<div class="field"><label>バイト先名</label><input type="text" id="f-name" value="' + esc(j.name) + '" placeholder="例：コンビニ" /></div>' +
+      '<div class="field"><label>振込先口座</label><select id="f-account">' + accountOptions(j.accountId) + '</select></div>' +
+      '<div class="field-row">' +
+      '<div class="field"><label>平日時給（日祝以外）</label><input type="number" id="f-normal" value="' + j.normalRate + '" /></div>' +
+      '<div class="field"><label>日祝時給</label><input type="number" id="f-holiday" value="' + j.holidayRate + '" /></div>' +
+      '</div>' +
+      '<div class="field"><label>1日の標準勤務時間</label><input type="number" step="0.25" id="f-hours" value="' + j.defaultHours + '" /></div>' +
+      '<p class="note">日本の祝日は移動休日があり単純計算できないため、祝日の自動判定はしていません。シフトを記録するときに「日祝レート」のチェックを自分で入れてください（日曜日は自動でチェックが入ります）。</p>' +
+      '<div class="field-row">' +
+      '<div class="field"><label>締め日（毎月）</label><input type="number" id="f-closing" min="1" max="31" value="' + j.closingDay + '" /></div>' +
+      '<div class="field"><label>給料日（毎月）</label><input type="number" id="f-payday" min="1" max="31" value="' + j.paymentDay + '" /></div>' +
+      '</div>' +
+      '<div class="field"><label>支払月</label><select id="f-offset">' + offsetOptions + '</select></div>' +
+      '<p class="note">例えば「月末締め・翌月25日払い」なら締め日31（月末扱い）、支払月「翌月」、給料日25。シフトを記録するとこの情報から振込予定日を自動計算します。</p>' +
+      '<div class="field"><label>メモ</label><input type="text" id="f-note" value="' + esc(j.note) + '" /></div>' +
+      '<div class="sheet-actions">' +
+      '<button class="btn primary" id="f-save">保存</button>' +
+      (existing ? '<button class="btn danger" id="f-delete">削除</button>' : '') +
+      '</div>';
 
+    openSheet(existing ? 'バイト先を編集' : 'バイト先を追加', html, function (body) {
+      body.querySelector('#f-save').addEventListener('click', function () {
+        var fields = {
+          name: body.querySelector('#f-name').value.trim() || '無題のバイト',
+          accountId: body.querySelector('#f-account').value,
+          normalRate: Number(body.querySelector('#f-normal').value) || 0,
+          holidayRate: Number(body.querySelector('#f-holiday').value) || 0,
+          defaultHours: Number(body.querySelector('#f-hours').value) || 0,
+          closingDay: Number(body.querySelector('#f-closing').value) || 31,
+          paymentDay: Number(body.querySelector('#f-payday').value) || 25,
+          paymentMonthOffset: Number(body.querySelector('#f-offset').value),
+          note: body.querySelector('#f-note').value.trim()
+        };
+        if (existing) S.updateJob(existing.id, fields); else S.addJob(fields);
+        closeSheet();
+        renderAll();
+        toast('バイト先を保存しました');
+      });
+      var del = body.querySelector('#f-delete');
+      if (del) {
+        del.addEventListener('click', function () {
+          if (!S.removeJob(existing.id)) {
+            toast('このバイト先はシフトの記録から参照されているため削除できません');
+            return;
+          }
+          closeSheet();
+          renderAll();
+          toast('バイト先を削除しました');
+        });
+      }
+    });
+  }
+
+  /* ---------------- フォーム：シフト記録 ---------------- */
+
+  function openShiftForm(existing) {
+    var jobs = S.activeJobs();
+    if (!jobs.length) {
+      toast('先にバイト先を登録してください');
+      openJobForm(null);
+      return;
+    }
+    var jobId = existing ? existing.jobId : jobs[0].id;
+    if (!S.getJob(jobId)) jobId = jobs[0].id;
+    var date = existing ? existing.date : U.todayStr();
+    var hours = existing ? existing.shiftHours : (S.getJob(jobId) || {}).defaultHours;
+    var holiday = existing ? !!existing.shiftHolidayRate : (U.parseDate(date).getDay() === 0);
+    var status = existing ? existing.status : 'planned';
+
+    function jobOptionsHtml() {
+      return jobs.map(function (j) { return '<option value="' + j.id + '"' + (j.id === jobId ? ' selected' : '') + '>' + esc(j.name) + '</option>'; }).join('');
+    }
+    function previewText() {
+      var job = S.getJob(jobId);
+      if (!job) return '';
+      var rate = holiday ? job.holidayRate : job.normalRate;
+      var amount = Math.round((Number(hours) || 0) * rate);
+      var settle = S.settleDateForJob(date, jobId);
+      return '金額：' + fmtYen(amount) + '（' + hours + '時間 × ¥' + rate.toLocaleString('ja-JP') + '/h） ／ 振込予定日：' + fmtDateShort(settle);
+    }
     function fieldsHtml() {
-      return '<div class="toggle-row" id="f-status">' +
-        '<button type="button" data-status="planned" class="' + (status === 'planned' ? 'active' : '') + '">予定</button>' +
-        '<button type="button" data-status="received" class="' + (status === 'received' ? 'active' : '') + '">入金済み</button>' +
-        '</div>' +
-        '<div class="field"><label>内容</label><input type="text" id="f-title" value="' + esc(e.title) + '" placeholder="例：家庭教師のバイト代" /></div>' +
-        '<div class="field"><label>金額</label><input type="number" id="f-amount" value="' + e.amount + '" /></div>' +
+      return '<div class="field"><label>バイト先</label><select id="f-job">' + jobOptionsHtml() + '</select></div>' +
         '<div class="field-row">' +
-        '<div class="field"><label>稼いだ日</label><input type="date" id="f-earned" value="' + e.earnedDate + '" /></div>' +
-        '<div class="field"><label>振込予定日</label><input type="date" id="f-expected" value="' + e.expectedPayDate + '" /></div>' +
+        '<div class="field"><label>勤務日</label><input type="date" id="f-date" value="' + date + '" /></div>' +
+        '<div class="field"><label>時間</label><input type="number" step="0.25" id="f-hours" value="' + hours + '" /></div>' +
         '</div>' +
-        (status === 'received' ? '<div class="field"><label>実際の入金日</label><input type="date" id="f-actual" value="' + (e.actualPayDate || U.todayStr()) + '" /></div>' : '') +
-        '<div class="field"><label>入金先口座</label><select id="f-account">' + accountOptions(e.accountId) + '</select></div>' +
-        '<div class="field"><label>メモ</label><textarea id="f-note">' + esc(e.note) + '</textarea></div>';
+        '<div class="checkbox-row"><input type="checkbox" id="f-holiday"' + (holiday ? ' checked' : '') + ' /><label for="f-holiday">日祝レートを適用する（日曜は自動チェック、祝日は手動でお願いします）</label></div>' +
+        '<div class="toggle-row" id="f-status">' +
+        '<button type="button" data-status="planned" class="' + (status === 'planned' ? 'active' : '') + '">予定</button>' +
+        '<button type="button" data-status="confirmed" class="' + (status === 'confirmed' ? 'active' : '') + '">確定</button>' +
+        '</div>' +
+        '<p class="note" id="f-preview">' + previewText() + '</p>' +
+        '<div class="field"><label>メモ</label><input type="text" id="f-note" value="' + esc(existing ? existing.note : '') + '" /></div>';
     }
 
     var html = '<div id="fields-wrap">' + fieldsHtml() + '</div>' +
@@ -846,56 +979,74 @@
       (existing ? '<button class="btn danger" id="f-delete">削除</button>' : '') +
       '</div>';
 
-    openSheet(existing ? '収入予定を編集' : '収入予定を追加', html, function (body) {
-      function bindToggle() {
+    openSheet(existing ? 'シフトを編集' : 'シフトを記録', html, function (body) {
+      function updatePreview() {
+        var el = body.querySelector('#f-preview');
+        if (el) el.textContent = previewText();
+      }
+      function rebuild() {
+        body.querySelector('#fields-wrap').innerHTML = fieldsHtml();
+        bindAll();
+      }
+      function bindAll() {
+        body.querySelector('#f-job').addEventListener('change', function () { jobId = this.value; rebuild(); });
+        body.querySelector('#f-date').addEventListener('change', function () {
+          date = this.value || U.todayStr();
+          holiday = U.parseDate(date).getDay() === 0;
+          rebuild();
+        });
+        body.querySelector('#f-hours').addEventListener('input', function () { hours = this.value; updatePreview(); });
+        body.querySelector('#f-holiday').addEventListener('change', function () { holiday = this.checked; updatePreview(); });
         body.querySelectorAll('#f-status button').forEach(function (btn) {
           btn.addEventListener('click', function () {
             status = btn.getAttribute('data-status');
-            e.title = body.querySelector('#f-title').value;
-            e.amount = body.querySelector('#f-amount').value;
-            e.earnedDate = body.querySelector('#f-earned').value;
-            e.expectedPayDate = body.querySelector('#f-expected').value;
-            e.accountId = body.querySelector('#f-account').value;
-            body.querySelector('#fields-wrap').innerHTML = fieldsHtml();
-            bindToggle();
+            body.querySelectorAll('#f-status button').forEach(function (b) { b.classList.toggle('active', b === btn); });
           });
         });
       }
-      bindToggle();
+      bindAll();
 
       body.querySelector('#f-save').addEventListener('click', function () {
-        var actualEl = body.querySelector('#f-actual');
+        var finalJobId = body.querySelector('#f-job').value;
+        var finalDate = body.querySelector('#f-date').value || U.todayStr();
+        var finalHours = Number(body.querySelector('#f-hours').value) || 0;
+        var finalHoliday = body.querySelector('#f-holiday').checked;
+        var finalNote = body.querySelector('#f-note').value.trim();
+        var job = S.getJob(finalJobId);
+        if (!job) { toast('バイト先が見つかりません'); return; }
+        var rate = finalHoliday ? job.holidayRate : job.normalRate;
         var fields = {
-          title: body.querySelector('#f-title').value.trim(),
-          amount: Number(body.querySelector('#f-amount').value) || 0,
-          earnedDate: body.querySelector('#f-earned').value || U.todayStr(),
-          expectedPayDate: body.querySelector('#f-expected').value || U.todayStr(),
-          accountId: body.querySelector('#f-account').value,
+          type: 'income',
           status: status,
-          actualPayDate: status === 'received' ? (actualEl ? actualEl.value : U.todayStr()) : null,
-          note: body.querySelector('#f-note').value.trim()
+          date: finalDate,
+          settleDate: S.settleDateForJob(finalDate, finalJobId),
+          accountId: job.accountId,
+          amount: Math.round(finalHours * rate),
+          title: job.name,
+          note: finalNote,
+          jobId: finalJobId,
+          shiftHours: finalHours,
+          shiftHolidayRate: finalHoliday
         };
-        if (existing) S.updateEarning(existing.id, fields); else S.addEarning(fields);
+        if (existing) S.updateTransaction(existing.id, fields); else S.addTransaction(fields);
         closeSheet();
         renderAll();
-        toast('収入予定を保存しました');
+        toast('シフトを記録しました');
       });
       var del = body.querySelector('#f-delete');
       if (del) {
         del.addEventListener('click', function () {
-          if (!confirm('この収入予定を削除しますか？')) return;
-          S.removeEarning(existing.id);
+          if (!confirm('このシフトの記録を削除しますか？')) return;
+          S.removeTransaction(existing.id);
           closeSheet();
           renderAll();
-          toast('収入予定を削除しました');
+          toast('シフトの記録を削除しました');
         });
       }
     });
   }
 
   /* ---------------- フォーム：サブスク ---------------- */
-
-  var CURRENCIES = ['JPY', 'USD', 'EUR', 'GBP', 'KRW', 'CNY', 'AUD'];
 
   function openSubscriptionForm(existing) {
     var s = existing || {
