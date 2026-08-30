@@ -32,7 +32,6 @@
       toast('初期口座を3つ用意しました。残高や名前は設定から編集できます');
     }, 400);
   }
-  seedIfEmpty();
 
   /* ---------------- 汎用ユーティリティ ---------------- */
 
@@ -69,6 +68,55 @@
     if (!id) return '';
     var c = S.getCard(id);
     return c ? c.name : '（削除されたカード）';
+  }
+
+  /* ---------------- クラウド同期 ---------------- */
+
+  function syncStatusText() {
+    var cfg = S.syncCfg || {};
+    if (!cfg.url || !cfg.token) return '未設定（下のURL・トークンを入力してください）';
+    if (cfg.lastError) return 'エラー：' + cfg.lastError;
+    if (cfg.lastSyncAt) return '最終同期：' + new Date(cfg.lastSyncAt).toLocaleString('ja-JP');
+    return '未同期';
+  }
+  function refreshSyncStatusUi() {
+    var el = document.getElementById('sync-status');
+    if (el) el.textContent = syncStatusText();
+  }
+
+  var pushTimer = null;
+  function schedulePush() {
+    if (!S.syncCfg.url || !S.syncCfg.token) return;
+    clearTimeout(pushTimer);
+    pushTimer = setTimeout(function () {
+      S.pushToCloud(function () { refreshSyncStatusUi(); });
+    }, 1200);
+  }
+
+  /* 起動時／設定保存時：まずリモートを確認し、ローカルより新しければ取り込む。
+   * preferRemote=true（この端末でこのURLに初めて紐づけたとき）はタイムスタンプに関わらず
+   * リモートを優先する。そうしないと、まだ何も触っていない端末の「シードしたばかりの初期口座」
+   * のタイムスタンプの方が新しく見えてしまい、既にクラウドにある本物のデータを
+   * 空っぽの初期口座で上書きしてしまう事故になる。
+   * リモートが無ければそこでシードして初回アップロードする。 */
+  function activateSync(pushAfter, preferRemote) {
+    if (!S.syncCfg.url || !S.syncCfg.token) { S.onSave = null; return; }
+    S.pullFromCloud(function (err, res) {
+      var applied = false;
+      if (!err && res && res.data) {
+        var remoteNewer = !S.data.updatedAt || (res.updatedAt && res.updatedAt > S.data.updatedAt);
+        if (preferRemote || remoteNewer) {
+          S.applyRemote(res.data);
+          applied = true;
+        }
+      }
+      seedIfEmpty();
+      S.onSave = schedulePush;
+      renderAll();
+      refreshSyncStatusUi();
+      if (applied) toast('クラウドの最新データを取り込みました');
+      if (pushAfter || !applied) schedulePush();
+    });
   }
 
   var toastTimer = null;
@@ -842,6 +890,19 @@
       '<div class="list-mini">' + cardHtml + '</div>' +
       '</section>' +
       '<section class="panel">' +
+      '<h2>クラウド同期（GAS）</h2>' +
+      '<div class="field"><label>ウェブアプリURL</label><input type="text" id="sync-url" value="' + esc(S.syncCfg.url) + '" placeholder="https://script.google.com/macros/s/xxxx/exec" /></div>' +
+      '<div class="field"><label>トークン</label><input type="password" id="sync-token" value="' + esc(S.syncCfg.token) + '" /></div>' +
+      '<div class="field"><label>同期ID</label><input type="text" id="sync-id" value="' + esc(S.syncCfg.syncId || 'me') + '" /></div>' +
+      '<p class="note">他の端末にも同じURL・トークン・同期IDを設定すると同じデータを共有できます。この設定はこの端末のブラウザ内だけに保存され、バックアップJSONやGitHubのソースには含まれません。</p>' +
+      '<div class="btn-row">' +
+      '<button class="btn" id="sync-save">設定を保存</button>' +
+      '<button class="btn" id="sync-push">今すぐアップロード</button>' +
+      '<button class="btn" id="sync-pull">今すぐダウンロード</button>' +
+      '</div>' +
+      '<p class="note" id="sync-status">' + esc(syncStatusText()) + '</p>' +
+      '</section>' +
+      '<section class="panel">' +
       '<h2>データ</h2>' +
       '<div class="btn-row">' +
       '<button class="btn" id="btn-export">バックアップ (JSON)</button>' +
@@ -850,8 +911,7 @@
       '</div>' +
       '<input type="file" id="file-import" accept="application/json,.json" hidden />' +
       '<p class="note">データはこの端末のブラウザ内（localStorage）に保存されています。機種変更や履歴の削除で消えるので、ときどきバックアップしてください。<br />' +
-      'ユーザーID: <code>' + esc(S.data.userId) + '</code><br />' +
-      'クラウド同期（GAS＋スプレッドシート）は次のフェーズで追加予定です。GAS側の受け口となるスクリプトは <code>gas/Code.gs</code> に用意してあります。</p>' +
+      'ユーザーID: <code>' + esc(S.data.userId) + '</code>（バックアップファイルの識別用。クラウド同期は上の「同期ID」を使います）</p>' +
       '</section>';
   }
 
@@ -864,6 +924,33 @@
     });
     body.querySelector('#add-account').addEventListener('click', function () { openAccountForm(null); });
     body.querySelector('#add-card').addEventListener('click', function () { openCardForm(null); });
+
+    body.querySelector('#sync-save').addEventListener('click', function () {
+      var wasLinked = !!(S.syncCfg.url && S.syncCfg.token);
+      S.saveSyncCfg({
+        url: body.querySelector('#sync-url').value.trim(),
+        token: body.querySelector('#sync-token').value.trim(),
+        syncId: body.querySelector('#sync-id').value.trim() || 'me'
+      });
+      toast('同期設定を保存しました。クラウドを確認しています…');
+      activateSync(true, !wasLinked);
+    });
+    body.querySelector('#sync-push').addEventListener('click', function () {
+      S.pushToCloud(function (err) {
+        refreshSyncStatusUi();
+        toast(err ? 'アップロード失敗：' + err : 'アップロードしました');
+      });
+    });
+    body.querySelector('#sync-pull').addEventListener('click', function () {
+      if (!confirm('クラウドの最新データでこの端末のデータを上書きします。よろしいですか？')) return;
+      S.pullFromCloud(function (err, res) {
+        if (err) { toast('ダウンロード失敗：' + err); return; }
+        S.applyRemote(res.data);
+        closeSheet();
+        renderAll();
+        toast('クラウドのデータを取り込みました');
+      });
+    });
 
     body.querySelector('#btn-export').addEventListener('click', function () {
       var blob = new Blob([S.exportJson()], { type: 'application/json' });
@@ -917,6 +1004,13 @@
 
   /* ---------------- 起動 ---------------- */
 
+  S.loadSync();
   setView('overview');
-  renderAll();
+  if (S.syncCfg.url && S.syncCfg.token) {
+    renderAll(); // クラウド確認中も一旦ローカルの内容を表示しておく
+    activateSync(false);
+  } else {
+    seedIfEmpty();
+    renderAll();
+  }
 })();

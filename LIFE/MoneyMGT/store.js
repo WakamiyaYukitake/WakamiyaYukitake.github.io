@@ -124,6 +124,7 @@
         console.warn('MoneyMGT: failed to save data', e);
       }
       this.rev++;
+      if (typeof this.onSave === 'function') this.onSave();
     },
 
     /* ---------- 口座 ---------- */
@@ -586,6 +587,79 @@
       this.data.userId = incoming.userId || userId;
       this.save();
     }
+  };
+
+  /* ---------------- クラウド同期（GAS） ----------------
+   * URL・トークンはこの端末のブラウザ内だけに保存し、バックアップJSONには含めない。
+   * データ本体は Store.data をまるごと1ユーザー1行として同期する「最後に保存した方が勝つ」方式。
+   */
+  var SYNC_KEY = 'moneymgt.sync.v1';
+
+  Store.loadSync = function () {
+    var cfg = read(SYNC_KEY, { url: '', token: '', syncId: 'me', lastSyncAt: 0, lastError: '' });
+    if (!cfg.syncId) cfg.syncId = 'me';
+    this.syncCfg = cfg;
+    return cfg;
+  };
+
+  Store.saveSyncCfg = function (fields) {
+    Object.assign(this.syncCfg, fields);
+    try {
+      localStorage.setItem(SYNC_KEY, JSON.stringify(this.syncCfg));
+    } catch (e) {
+      console.warn('MoneyMGT: failed to save sync config', e);
+    }
+  };
+
+  Store.pushToCloud = function (cb) {
+    var cfg = this.syncCfg;
+    if (!cfg || !cfg.url || !cfg.token) { if (cb) cb('URL・トークンが未設定です'); return; }
+    var self = this;
+    fetch(cfg.url + '?token=' + encodeURIComponent(cfg.token), {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' }, // application/json だとCORSプリフライトでGASが弾くため
+      body: JSON.stringify({ userId: cfg.syncId, data: this.data })
+    }).then(function (r) { return r.json(); })
+      .then(function (res) {
+        if (res.ok) {
+          self.saveSyncCfg({ lastSyncAt: res.updatedAt, lastError: '' });
+          if (cb) cb(null, res);
+        } else {
+          self.saveSyncCfg({ lastError: res.error || '不明なエラー' });
+          if (cb) cb(res.error || '不明なエラー');
+        }
+      })
+      .catch(function (err) {
+        self.saveSyncCfg({ lastError: String(err) });
+        if (cb) cb(String(err));
+      });
+  };
+
+  Store.pullFromCloud = function (cb) {
+    var cfg = this.syncCfg;
+    if (!cfg || !cfg.url || !cfg.token) { if (cb) cb('URL・トークンが未設定です'); return; }
+    fetch(cfg.url + '?userId=' + encodeURIComponent(cfg.syncId) + '&token=' + encodeURIComponent(cfg.token))
+      .then(function (r) { return r.json(); })
+      .then(function (res) {
+        if (res.ok) { if (cb) cb(null, res); } else { if (cb) cb(res.error || '不明なエラー'); }
+      })
+      .catch(function (err) { if (cb) cb(String(err)); });
+  };
+
+  /* リモートのデータでこの端末のデータを丸ごと置き換える */
+  Store.applyRemote = function (remoteData) {
+    var localUserId = this.data.userId;
+    this.data = Object.assign(emptyData(), remoteData);
+    ['accounts', 'cards', 'transactions', 'refunds', 'earnings', 'subscriptions'].forEach(function (k) {
+      if (!Array.isArray(this.data[k])) this.data[k] = [];
+    }, this);
+    if (!this.data.userId) this.data.userId = localUserId;
+    try {
+      localStorage.setItem(DATA_KEY, JSON.stringify(this.data));
+    } catch (e) {
+      console.warn('MoneyMGT: failed to save data', e);
+    }
+    this.rev++;
   };
 
   Store.util = {
