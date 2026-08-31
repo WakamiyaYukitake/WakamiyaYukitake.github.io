@@ -1,0 +1,409 @@
+/* MovingFurniture — 引っ越し家具管理
+   持ち物を「行き先ごとに色分けして、パッと見て分かる」ことを最優先にしたチェックリストUI。 */
+:root {
+  --bg: #f2f4f7;
+  --panel: #ffffff;
+  --panel-2: #f7f8fa;
+  --line: #e4e7ec;
+  --text: #1c2130;
+  --muted: #767f91;
+  --accent: #0f9d8e;
+  --accent-soft: #e3f5f2;
+  --bad: #dc4545;
+  --shadow: 0 1px 2px rgba(20, 24, 33, 0.04), 0 4px 14px rgba(20, 24, 33, 0.05);
+  --bar-h: 68px;
+
+  --c-none: #9aa1ac;
+  --c-tokyo: #2f7dd1;
+  --c-home: #16a34a;
+  --c-sell: #d97706;
+  --c-discard: #dc2626;
+  --c-unsure: #6b7280;
+  --c-buy: #7c3aed;
+}
+
+* { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+html, body {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+  background: var(--bg);
+  color: var(--text);
+  font-family: -apple-system, BlinkMacSystemFont, "Hiragino Kaku Gothic ProN",
+               "Noto Sans JP", "Segoe UI", Roboto, sans-serif;
+  overscroll-behavior: none;
+}
+
+button, input, select, textarea { font-family: inherit; }
+
+#app {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  height: 100dvh;
+}
+
+/* ---------- 上部バー ---------- */
+#topbar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
+  padding-top: calc(10px + env(safe-area-inset-top));
+  background: var(--panel);
+  border-bottom: 1px solid var(--line);
+  z-index: 1000;
+}
+
+.brand { font-weight: 800; font-size: 14.5px; color: var(--text); white-space: nowrap; letter-spacing: -0.01em; }
+.ver { font-size: 9.5px; font-weight: 600; color: var(--muted); vertical-align: middle; background: var(--panel-2); padding: 1px 5px; border-radius: 999px; margin-left: 2px; }
+
+#topbar .status { flex: 1; min-width: 0; text-align: right; }
+#status-main {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--accent);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.sub { font-size: 11px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+.icon-btn {
+  flex: none;
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  border: 1px solid var(--line);
+  background: var(--panel-2);
+  color: var(--text);
+  font-size: 17px;
+  line-height: 1;
+  cursor: pointer;
+}
+.icon-btn:active { background: var(--line); }
+.icon-btn.small { width: 30px; height: 30px; font-size: 14px; border-radius: 8px; }
+
+/* ---------- ビュー共通 ---------- */
+#views {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  padding: 12px 14px calc(88px + env(safe-area-inset-bottom));
+}
+.view { display: flex; flex-direction: column; gap: 12px; }
+.view[hidden] { display: none; }
+
+/* ---------- 進捗カード ---------- */
+.hero-card {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  padding: 16px;
+  box-shadow: var(--shadow);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.hero-card .label { font-size: 12.5px; color: var(--muted); font-weight: 600; }
+.hero-card .amount { font-size: 24px; font-weight: 800; }
+.hero-card .amount .n2 { color: var(--muted); font-size: 15px; font-weight: 600; }
+
+.progress-bar { height: 10px; border-radius: 999px; background: var(--panel-2); overflow: hidden; }
+.progress-bar > div { height: 100%; border-radius: 999px; background: var(--accent); transition: width .25s; }
+
+/* ---------- 行き先の件数グリッド ---------- */
+.stat-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+.stat-grid .stat-card {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 10px 6px;
+  text-align: center;
+  cursor: pointer;
+  box-shadow: var(--shadow);
+}
+.stat-grid .stat-card:active { background: var(--panel-2); }
+.stat-grid .stat-card .n { font-size: 19px; font-weight: 800; }
+.stat-grid .stat-card .l { font-size: 10.5px; color: var(--muted); margin-top: 3px; font-weight: 600; }
+
+/* ---------- パネル ---------- */
+.panel {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  box-shadow: var(--shadow);
+}
+.panel-head { display: flex; align-items: center; justify-content: space-between; }
+.panel-head h2 { margin: 0; font-size: 13.5px; letter-spacing: 0.01em; color: var(--text); }
+
+.entry-list { display: flex; flex-direction: column; gap: 8px; }
+.empty-state { text-align: center; color: var(--muted); font-size: 12.5px; padding: 20px 10px; }
+
+/* ---------- グループ見出し ---------- */
+.group-header {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 14px 2px 6px;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text);
+}
+.group-header:first-child { padding-top: 2px; }
+.group-header .g-dot { width: 9px; height: 9px; border-radius: 50%; flex: none; }
+.group-header .g-count { margin-left: auto; font-weight: 600; font-size: 11.5px; color: var(--muted); }
+
+/* ---------- 持ち物の行 ---------- */
+.item-row {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 13px;
+  padding: 11px 12px;
+  box-shadow: var(--shadow);
+}
+.item-row.done { opacity: 0.5; }
+.item-row .item-check {
+  flex: none;
+  width: 25px;
+  height: 25px;
+  border-radius: 50%;
+  border: 2px solid var(--line);
+  background: var(--panel);
+  color: transparent;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.item-row .item-check.checked { background: var(--accent); border-color: var(--accent); color: #fff; }
+.item-row .item-info { flex: 1; min-width: 0; cursor: pointer; }
+.item-row .item-name {
+  font-size: 14.5px;
+  font-weight: 700;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.item-row.done .item-name { text-decoration: line-through; }
+.item-row .item-sub { display: flex; align-items: center; gap: 6px; margin-top: 4px; flex-wrap: wrap; }
+.item-row .item-price { font-size: 12.5px; color: var(--text); white-space: nowrap; font-weight: 700; flex: none; }
+
+.tag {
+  display: inline-block;
+  font-size: 10.5px;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 999px;
+  white-space: nowrap;
+}
+.tag.dest-none { color: var(--c-none); background: #eef0f3; }
+.tag.dest-tokyo { color: var(--c-tokyo); background: #e8f1fc; }
+.tag.dest-home { color: var(--c-home); background: #e7f7ed; }
+.tag.dest-sell { color: var(--c-sell); background: #fdf1e0; }
+.tag.dest-discard { color: var(--c-discard); background: #fdeaea; }
+.tag.dest-unsure { color: var(--c-unsure); background: #eef0f3; }
+.tag.dest-buy { color: var(--c-buy); background: #f1e9fd; }
+.tag.time { color: var(--muted); background: var(--panel-2); }
+
+/* ---------- 区切りタブ（セグメント） ---------- */
+.segment { display: flex; gap: 5px; background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 4px; box-shadow: var(--shadow); }
+.segment-btn { flex: 1; border: 0; background: transparent; color: var(--muted); padding: 9px; border-radius: 9px; font-size: 13px; font-weight: 600; cursor: pointer; }
+.segment-btn.active { background: var(--accent); color: #fff; }
+
+/* ---------- カレンダー ---------- */
+.cal-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 4px; }
+.cal-title { font-size: 14px; font-weight: 800; }
+.cal-weekdays {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  text-align: center;
+  font-size: 10.5px;
+  color: var(--muted);
+  padding: 2px 0;
+  font-weight: 600;
+}
+.cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 3px; }
+.cal-day {
+  position: relative;
+  aspect-ratio: 1 / 1;
+  border-radius: 9px;
+  background: var(--panel-2);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  cursor: pointer;
+  border: 1px solid transparent;
+}
+.cal-day.pad { visibility: hidden; pointer-events: none; }
+.cal-day .cal-daynum { font-size: 12px; font-weight: 600; }
+.cal-day .cal-dot { width: 5px; height: 5px; border-radius: 50%; background: var(--accent); }
+.cal-day.today { border-color: var(--c-tokyo); }
+.cal-day.today .cal-daynum { color: var(--c-tokyo); font-weight: 800; }
+.cal-day.selected { background: var(--accent); }
+.cal-day.selected .cal-daynum { color: #fff; font-weight: 800; }
+.cal-day.selected .cal-dot { background: #fff; }
+.cal-detail { margin-top: 10px; display: flex; flex-direction: column; gap: 8px; }
+.cal-detail .cal-detail-head { font-size: 12.5px; color: var(--muted); font-weight: 700; margin-top: 2px; }
+
+/* ---------- 下部バー / FAB ---------- */
+#bottombar {
+  display: flex;
+  height: var(--bar-h);
+  padding-bottom: max(env(safe-area-inset-bottom), 8px);
+  background: var(--panel);
+  border-top: 1px solid var(--line);
+  z-index: 1000;
+}
+.bar-btn {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  border: 0;
+  background: transparent;
+  color: var(--muted);
+  font-size: 10.5px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.bar-btn .bar-icon { font-size: 19px; line-height: 1; filter: grayscale(1); opacity: 0.55; }
+.bar-btn:active { background: var(--panel-2); }
+.bar-btn.active { color: var(--accent); }
+.bar-btn.active .bar-icon { filter: none; opacity: 1; }
+
+.fab {
+  position: fixed;
+  right: 18px;
+  bottom: calc(var(--bar-h) + env(safe-area-inset-bottom) + 16px);
+  width: 54px;
+  height: 54px;
+  border-radius: 50%;
+  border: 0;
+  background: var(--accent);
+  color: #fff;
+  font-size: 26px;
+  font-weight: 700;
+  box-shadow: 0 6px 18px rgba(15, 157, 142, 0.4);
+  cursor: pointer;
+  z-index: 1200;
+}
+.fab:active { filter: brightness(0.92); }
+
+/* ---------- シート（フォーム共通） ---------- */
+.backdrop { position: fixed; inset: 0; background: rgba(20, 24, 33, 0.45); z-index: 1500; }
+
+.sheet {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  max-height: 90vh;
+  max-height: 90dvh;
+  display: flex;
+  flex-direction: column;
+  background: var(--panel);
+  border-top: 1px solid var(--line);
+  border-radius: 18px 18px 0 0;
+  z-index: 1600;
+}
+.sheet[hidden] { display: none; }
+
+.sheet-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--line);
+  flex: none;
+}
+.sheet-head h2 { margin: 0; font-size: 16px; font-weight: 800; }
+
+.sheet-body {
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  padding: 14px 16px calc(24px + env(safe-area-inset-bottom));
+  display: flex;
+  flex-direction: column;
+  gap: 13px;
+}
+
+.field { display: flex; flex-direction: column; gap: 5px; }
+.field label { font-size: 12px; color: var(--muted); font-weight: 600; }
+.field input[type="text"],
+.field input[type="number"],
+.field input[type="date"],
+.field select,
+.field textarea {
+  background: var(--panel-2);
+  color: var(--text);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 11px 12px;
+  font-size: 15px;
+  width: 100%;
+}
+.field textarea { resize: vertical; min-height: 54px; }
+.field-row { display: flex; gap: 10px; }
+.field-row .field { flex: 1; min-width: 0; }
+
+.checkbox-row { display: flex; align-items: center; gap: 9px; font-size: 13.5px; font-weight: 600; background: var(--panel-2); border-radius: 10px; padding: 11px 12px; }
+.checkbox-row input { width: 20px; height: 20px; accent-color: var(--accent); }
+
+.sheet-actions { display: flex; gap: 8px; margin-top: 4px; }
+.btn {
+  flex: 1;
+  padding: 13px;
+  border-radius: 11px;
+  border: 1px solid var(--line);
+  background: var(--panel-2);
+  color: var(--text);
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+}
+.btn:active { background: var(--line); }
+.btn.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+.btn.danger { color: var(--bad); border-color: rgba(220, 69, 69, 0.35); }
+.btn.full { flex: 1 1 100%; }
+
+.btn-row { display: flex; flex-wrap: wrap; gap: 8px; }
+
+.note { margin: 0; font-size: 12px; line-height: 1.6; color: var(--muted); }
+.note code { background: var(--panel-2); padding: 1px 5px; border-radius: 4px; }
+
+/* ---------- トースト ---------- */
+.toast {
+  position: fixed;
+  left: 50%;
+  transform: translateX(-50%);
+  bottom: calc(var(--bar-h) + env(safe-area-inset-bottom) + 20px);
+  max-width: 88vw;
+  padding: 10px 16px;
+  border-radius: 999px;
+  background: var(--text);
+  color: #fff;
+  font-size: 13px;
+  font-weight: 600;
+  text-align: center;
+  z-index: 2000;
+  box-shadow: var(--shadow);
+}
+.toast[hidden] { display: none; }

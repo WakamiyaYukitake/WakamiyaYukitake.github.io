@@ -1,0 +1,99 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,maximum-scale=1" />
+  <title>MovingFurniture — 引っ越し家具管理</title>
+  <meta name="description" content="長崎の部屋にある持ち物を、行き先と時期を決めながら片付けていくアプリ。" />
+  <meta name="theme-color" content="#f4f5f7" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+  <meta name="apple-mobile-web-app-title" content="家具の引越し" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div id="app">
+    <header id="topbar">
+      <div class="brand">MovingFurniture <span id="app-version" class="ver"></span></div>
+      <div class="status">
+        <div id="status-main">読み込み中…</div>
+        <div id="status-sub" class="sub">&nbsp;</div>
+      </div>
+      <button id="btn-settings" class="icon-btn" aria-label="設定を開く">⚙</button>
+    </header>
+
+    <main id="views">
+      <!-- 概要 -->
+      <section id="view-overview" class="view">
+        <div id="ov-progress" class="hero-card"></div>
+        <div id="ov-dest-stats" class="stat-grid"></div>
+
+        <section class="panel">
+          <div class="panel-head"><h2>直近の予定</h2></div>
+          <div id="ov-upcoming" class="entry-list"></div>
+        </section>
+      </section>
+
+      <!-- 持ち物：一覧・行き先の管理 -->
+      <section id="view-items" class="view" hidden>
+        <div class="segment" id="item-filter">
+          <button class="segment-btn active" data-filter="pending">残っているもの</button>
+          <button class="segment-btn" data-filter="all">すべて</button>
+        </div>
+        <div id="item-list"></div>
+      </section>
+
+      <!-- 予定：カレンダー -->
+      <section id="view-schedule" class="view" hidden>
+        <section class="panel">
+          <div class="cal-head">
+            <button id="cal-prev" class="icon-btn small" aria-label="前の月">‹</button>
+            <div id="cal-title" class="cal-title"></div>
+            <button id="cal-next" class="icon-btn small" aria-label="次の月">›</button>
+          </div>
+          <div class="cal-weekdays">
+            <span>日</span><span>月</span><span>火</span><span>水</span><span>木</span><span>金</span><span>土</span>
+          </div>
+          <div id="cal-grid" class="cal-grid"></div>
+          <div id="cal-detail" class="cal-detail"></div>
+        </section>
+
+        <section class="panel">
+          <div class="panel-head"><h2>時期メモのみ（日付未定）</h2></div>
+          <div id="sched-undated" class="entry-list"></div>
+        </section>
+      </section>
+    </main>
+
+    <footer id="bottombar">
+      <button class="bar-btn active" data-view="overview">
+        <span class="bar-icon">🏠</span><span class="bar-text">概要</span>
+      </button>
+      <button class="bar-btn" data-view="items">
+        <span class="bar-icon">📦</span><span class="bar-text">持ち物</span>
+      </button>
+      <button class="bar-btn" data-view="schedule">
+        <span class="bar-icon">🗓</span><span class="bar-text">予定</span>
+      </button>
+    </footer>
+
+    <button id="btn-fab" class="fab" aria-label="追加">＋</button>
+  </div>
+
+  <div id="sheet-backdrop" class="backdrop" hidden></div>
+  <section id="sheet" class="sheet" hidden>
+    <div class="sheet-head">
+      <h2 id="sheet-title">タイトル</h2>
+      <button id="btn-sheet-close" class="icon-btn" aria-label="閉じる">×</button>
+    </div>
+    <div class="sheet-body" id="sheet-body"></div>
+  </section>
+
+  <div id="toast" class="toast" hidden></div>
+
+  <script src="store.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
