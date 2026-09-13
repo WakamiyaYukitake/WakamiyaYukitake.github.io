@@ -1,0 +1,17 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "MovingFurniture",
+      "runtimeExecutable": "python3",
+      "runtimeArgs": ["-m", "http.server", "8791", "--directory", "MovingFurniture"],
+      "port": 8791
+    },
+    {
+      "name": "MMoVie",
+      "runtimeExecutable": "python3",
+      "runtimeArgs": ["-m", "http.server", "8792", "--directory", "MMoVie"],
+      "port": 8792
+    }
+  ]
+}

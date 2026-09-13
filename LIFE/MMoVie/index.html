@@ -1,0 +1,190 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,maximum-scale=1" />
+  <title>MMoVie — メモリームーヴィー作成</title>
+  <meta name="description" content="撮った写真や動画から、日付と場所をたどるメモリームーヴィーを作るアプリ。" />
+  <meta name="theme-color" content="#f2f4f7" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+  <meta name="apple-mobile-web-app-title" content="MMoVie" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div id="app">
+    <header id="topbar">
+      <button id="btn-back" class="icon-btn" aria-label="戻る" hidden>‹</button>
+      <div class="brand-wrap">
+        <div class="brand">MMoVie</div>
+        <div id="step-label" class="sub">&nbsp;</div>
+      </div>
+      <button id="btn-help" class="icon-btn" aria-label="このアプリについて">?</button>
+    </header>
+
+    <main id="views">
+      <!-- プロジェクト一覧 -->
+      <section id="view-projects" class="view">
+        <section class="panel">
+          <div class="panel-head"><h2>作成中のメモリームーヴィー</h2></div>
+          <div id="project-list" class="entry-list"></div>
+        </section>
+        <button class="btn primary full" id="btn-new-project">＋ 新しいMMVを作る</button>
+      </section>
+
+      <!-- 基本情報：タイトル・日付 -->
+      <section id="view-setup" class="view" hidden>
+        <section class="panel">
+          <div class="field">
+            <label>タイトル</label>
+            <input type="text" id="setup-title" placeholder="例）夏の思い出旅行" />
+          </div>
+          <div class="field-row">
+            <div class="field"><label>開始日</label><input type="date" id="setup-from" /></div>
+            <div class="field"><label>終了日</label><input type="date" id="setup-to" /></div>
+          </div>
+          <p class="note">この日付の範囲をもとに、選んだ写真・動画を自動で絞り込みます。</p>
+          <button class="btn primary full" id="btn-setup-next">写真・動画を選ぶ →</button>
+        </section>
+      </section>
+
+      <!-- 写真・動画の取り込み -->
+      <section id="view-import" class="view" hidden>
+        <section class="panel" id="import-intro">
+          <h2 class="section-title">写真・動画を選ぶ</h2>
+          <p class="note">この期間（<span id="import-range"></span>）に撮ったものが多く含まれるように、まとめて選んでください。日付から自動で絞り込みます。</p>
+          <input type="file" id="file-input" accept="image/*,video/*" multiple hidden />
+          <button class="btn primary full" id="btn-pick-files">写真・動画を選択</button>
+        </section>
+        <section class="panel" id="import-progress" hidden>
+          <div class="progress-bar"><div id="import-bar" style="width:0%"></div></div>
+          <div id="import-progress-label" class="sub center"></div>
+        </section>
+      </section>
+
+      <!-- 日程外の確認 -->
+      <section id="view-mismatch" class="view" hidden>
+        <section class="panel">
+          <h2 class="section-title">日程の外の写真・動画があります</h2>
+          <p class="note">指定した日程と違う日付のものです。1件ずつ含めるかどうか選んでください。</p>
+          <div id="mismatch-list" class="entry-list"></div>
+          <button class="btn primary full" id="btn-mismatch-continue">次へ →</button>
+        </section>
+      </section>
+
+      <!-- マップ全体表示 -->
+      <section id="view-map" class="view" hidden>
+        <section class="panel map-panel">
+          <h2 class="section-title">撮った場所の全体マップ</h2>
+          <div id="overview-map" class="map-box"></div>
+          <p id="map-note" class="note"></p>
+          <button class="btn primary full" id="btn-map-next">時系列で見ていく →</button>
+          <button class="btn full" id="btn-show-hidden">非表示にした項目を見る</button>
+        </section>
+      </section>
+
+      <!-- ポップ順次確認 -->
+      <section id="view-pop" class="view" hidden>
+        <div class="pop-progress"><div id="pop-progress-bar"></div></div>
+        <div id="pop-counter" class="sub center"></div>
+        <section class="panel pop-card">
+          <div class="pop-media-wrap" id="pop-media-wrap"></div>
+          <div class="field">
+            <label>タイトル（地名など）</label>
+            <input type="text" id="pop-title" placeholder="例）●●公園" />
+          </div>
+          <div class="field">
+            <label>日時</label>
+            <input type="datetime-local" id="pop-datetime" />
+          </div>
+          <div class="field">
+            <label>場所（ピンをドラッグして修正）</label>
+            <div id="pop-pin-map" class="map-box small"></div>
+          </div>
+          <div class="btn-row">
+            <button class="btn" id="btn-pop-edit">画像を編集（切り抜き・モザイク）</button>
+          </div>
+          <div class="btn-row">
+            <button class="btn danger" id="btn-pop-hide">この写真・動画を非表示にする</button>
+          </div>
+        </section>
+        <div class="pop-nav">
+          <button class="btn" id="btn-pop-prev">← 前へ</button>
+          <button class="btn primary" id="btn-pop-next">次へ →</button>
+        </div>
+      </section>
+
+      <!-- 集計 -->
+      <section id="view-summary" class="view" hidden>
+        <section class="panel">
+          <h2 class="section-title" id="summary-title"></h2>
+          <div id="summary-range" class="sub"></div>
+          <div class="stat-grid" id="summary-stats"></div>
+          <button class="btn primary full" id="btn-go-export">動画を出力する</button>
+          <button class="btn full" id="btn-back-to-pop">編集画面に戻る</button>
+        </section>
+      </section>
+
+      <!-- 出力 -->
+      <section id="view-export" class="view" hidden>
+        <section class="panel">
+          <h2 class="section-title">動画を書き出しています</h2>
+          <p class="note">再生しながらそのまま録画する方式のため、動画の長さぶんだけ時間がかかります。画面はそのまま開いたままにしてください。</p>
+          <div class="progress-bar"><div id="export-bar" style="width:0%"></div></div>
+          <div id="export-status" class="sub center"></div>
+          <canvas id="export-canvas" class="export-canvas-preview"></canvas>
+          <div id="export-result" class="btn-row" hidden>
+            <button class="btn primary full" id="btn-export-save">保存 / 共有</button>
+          </div>
+        </section>
+      </section>
+    </main>
+  </div>
+
+  <!-- 汎用シート -->
+  <div id="sheet-backdrop" class="backdrop" hidden></div>
+  <section id="sheet" class="sheet" hidden>
+    <div class="sheet-head">
+      <h2 id="sheet-title">タイトル</h2>
+      <button id="btn-sheet-close" class="icon-btn" aria-label="閉じる">×</button>
+    </div>
+    <div class="sheet-body" id="sheet-body"></div>
+  </section>
+
+  <!-- 画像編集（切り抜き・モザイク）オーバーレイ -->
+  <div id="editor-overlay" class="overlay" hidden>
+    <div class="overlay-head">
+      <div class="segment" id="editor-mode">
+        <button class="segment-btn active" data-mode="crop">切り抜き</button>
+        <button class="segment-btn" data-mode="mosaic">モザイク</button>
+      </div>
+      <button class="icon-btn" id="btn-editor-close" aria-label="閉じる">×</button>
+    </div>
+    <div class="editor-canvas-wrap">
+      <canvas id="editor-canvas"></canvas>
+    </div>
+    <div class="editor-controls" id="editor-controls-crop">
+      <label class="sub">拡大・縮小</label>
+      <input type="range" id="editor-zoom" min="0" max="100" value="0" />
+    </div>
+    <div class="editor-controls" id="editor-controls-mosaic" hidden>
+      <p class="note">画像をなぞってモザイクをかける範囲を選んでください。</p>
+      <div id="mosaic-list" class="mosaic-list"></div>
+    </div>
+    <button class="btn primary full" id="btn-editor-done">完了</button>
+  </div>
+
+  <div id="toast" class="toast" hidden></div>
+
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/exifr@7.1.3/dist/full.umd.js"></script>
+  <script src="store.js"></script>
+  <script src="media.js"></script>
+  <script src="geocode.js"></script>
+  <script src="map.js"></script>
+  <script src="export.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
