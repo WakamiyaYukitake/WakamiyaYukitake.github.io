@@ -215,6 +215,8 @@ button, input, select, textarea { font-family: inherit; }
 .cal-day.today { border-color: var(--accent); }
 .cal-day.today .cal-daynum { color: var(--accent); font-weight: 800; }
 .cal-day.selected { background: var(--panel-3); border-color: var(--accent-2); }
+.cal-day.picked { background: var(--accent); border-color: var(--accent); }
+.cal-day.picked .cal-daynum { color: #1a1206; font-weight: 800; }
 .cal-detail { margin-top: 10px; display: flex; flex-direction: column; gap: 7px; }
 .cal-detail .cal-detail-head { font-size: 12px; color: var(--muted); margin-top: 4px; }
 .cal-bal-list { display: flex; flex-direction: column; gap: 5px; }

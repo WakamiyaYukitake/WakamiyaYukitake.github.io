@@ -5,7 +5,7 @@
   var S = MoneyStore.load();
   var U = MoneyStore.util;
 
-  var APP_VERSION = 'v2.0.0';
+  var APP_VERSION = 'v2.1.0';
   var ACCOUNT_COLORS = ['#3ea6ff', '#ff8a3d', '#4cd08a', '#c792ea', '#ffd166', '#ef476f'];
   /* 外貨サブスク用の概算レート（1通貨あたり円）。ユーザーが選んだときの初期値で、後から自由に編集できる。 */
   var FX_PRESETS = { JPY: 1, USD: 150, EUR: 160, GBP: 190, KRW: 0.11, CNY: 21, AUD: 100 };
@@ -20,7 +20,7 @@
     calYear: todayD.getFullYear(),
     calMonth: todayD.getMonth() + 1, // 1-12
     calSelected: U.todayStr(),
-    calBalanceMode: 'effective', // 'effective'(実質残高) | 'actual'(実際の口座残高)
+    calBalanceMode: 'effective', // 'effective'(実質残高＝date基準) | 'actual'(実際の口座残高＝settleDate基準)
     cardTotalsMode: 'confirmed'
   };
 
@@ -236,15 +236,18 @@
 
   /* ---------------- カレンダー ---------------- */
 
+  function calDateField() {
+    return state.calBalanceMode === 'actual' ? 'settleDate' : 'date';
+  }
+
   function renderCalendar() {
     var y = state.calYear, m = state.calMonth;
     $('cal-title').textContent = y + '年' + m + '月';
     $('cal-balance-mode').querySelectorAll('.segment-btn').forEach(function (b) {
       b.classList.toggle('active', b.getAttribute('data-mode') === state.calBalanceMode);
     });
-    var includePlanned = state.calBalanceMode !== 'actual';
 
-    var events = S.monthEvents(y, m);
+    var events = S.monthEvents(y, m, calDateField());
     var byDate = {};
     events.forEach(function (ev) {
       (byDate[ev.date] = byDate[ev.date] || []).push(ev);
@@ -259,8 +262,7 @@
     for (var d = 1; d <= lastDay; d++) {
       var dateStr = y + '-' + (m < 10 ? '0' + m : m) + '-' + (d < 10 ? '0' + d : d);
       var dayEvents = byDate[dateStr] || [];
-      var counted = includePlanned ? dayEvents : dayEvents.filter(function (e) { return !e.pending; });
-      var net = counted.reduce(function (sum, ev) { return sum + ev.amount; }, 0);
+      var net = dayEvents.reduce(function (sum, ev) { return sum + ev.amount; }, 0);
       var cls = 'cal-day';
       if (dateStr === today) cls += ' today';
       if (dateStr === state.calSelected) cls += ' selected';
@@ -284,21 +286,20 @@
 
   function renderCalDetail(dayEvents) {
     var dateStr = state.calSelected;
-    var includePlanned = state.calBalanceMode !== 'actual';
+    var dateField = calDateField();
     var accounts = S.activeAccounts();
     var balHtml = accounts.map(function (a) {
-      var bal = S.accountBalanceOnDate(a.id, dateStr, includePlanned);
+      var bal = S.accountBalanceOnDate(a.id, dateStr, dateField);
       return '<div class="cal-bal-row">' +
         '<span class="dot" style="background:' + accountColor(a.id) + '"></span>' +
         '<span class="cal-bal-name">' + esc(a.name) + '</span>' +
         '<span class="cal-bal-amt">' + fmtYen(bal) + '</span></div>';
     }).join('');
 
-    var counted = includePlanned ? dayEvents : dayEvents.filter(function (e) { return !e.pending; });
-    var income = counted.filter(function (e) { return e.amount > 0; }).reduce(function (s, e) { return s + e.amount; }, 0);
-    var expense = counted.filter(function (e) { return e.amount < 0; }).reduce(function (s, e) { return s + e.amount; }, 0);
+    var income = dayEvents.filter(function (e) { return e.amount > 0; }).reduce(function (s, e) { return s + e.amount; }, 0);
+    var expense = dayEvents.filter(function (e) { return e.amount < 0; }).reduce(function (s, e) { return s + e.amount; }, 0);
     var isFuture = U.cmpDate(dateStr, U.todayStr()) > 0;
-    var modeLabel = includePlanned ? '実質残高' : '実際の口座残高';
+    var modeLabel = dateField === 'date' ? '実質残高' : '実際の口座残高';
 
     var head = '<div class="cal-detail-head">' + fmtDateShort(dateStr) + (isFuture ? ' 時点の予測' : ' 時点の') + modeLabel + '</div>' +
       '<div class="cal-bal-list">' + balHtml + '</div>' +
@@ -306,7 +307,7 @@
       '<div><div class="stat-label">この日の収入</div><div class="stat-value pos">' + fmtYen(income) + '</div></div>' +
       '<div><div class="stat-label">この日の支出</div><div class="stat-value neg">' + fmtYen(Math.abs(expense)) + '</div></div>' +
       '</div>';
-    var listHead = '<div class="cal-detail-head">内訳（予定も含む全件）</div>';
+    var listHead = '<div class="cal-detail-head">内訳</div>';
     var body = dayEvents.length ? dayEvents.map(eventRowHtml).join('') :
       '<div class="empty-state">この日の入出金はありません</div>';
     $('cal-detail').innerHTML = head + listHead + body;
@@ -451,6 +452,7 @@
   }
 
   $('btn-add-job').addEventListener('click', function () { openJobForm(null); });
+  $('btn-bulk-shift').addEventListener('click', function () { openBulkShiftForm(); });
 
   /* ---------------- 描画：サブスク ---------------- */
 
@@ -1043,6 +1045,119 @@
           toast('シフトの記録を削除しました');
         });
       }
+    });
+  }
+
+  /* ---------------- フォーム：シフトをまとめて記録 ---------------- */
+
+  function openBulkShiftForm() {
+    var jobs = S.activeJobs();
+    if (!jobs.length) {
+      toast('先にバイト先を登録してください');
+      openJobForm(null);
+      return;
+    }
+    var jobId = jobs[0].id;
+    var hours = (S.getJob(jobId) || {}).defaultHours || 0;
+    var picked = {}; // 'YYYY-MM-DD' -> true
+    var y = todayD.getFullYear(), m = todayD.getMonth() + 1;
+
+    function jobOptionsHtml() {
+      return jobs.map(function (j) { return '<option value="' + j.id + '"' + (j.id === jobId ? ' selected' : '') + '>' + esc(j.name) + '</option>'; }).join('');
+    }
+    function gridHtml() {
+      var firstWeekday = new Date(y, m - 1, 1).getDay();
+      var lastDay = new Date(y, m, 0).getDate();
+      var today = U.todayStr();
+      var cells = '';
+      for (var i = 0; i < firstWeekday; i++) cells += '<div class="cal-day pad"></div>';
+      for (var d = 1; d <= lastDay; d++) {
+        var dateStr = y + '-' + (m < 10 ? '0' + m : m) + '-' + (d < 10 ? '0' + d : d);
+        var cls = 'cal-day';
+        if (dateStr === today) cls += ' today';
+        if (picked[dateStr]) cls += ' picked';
+        cells += '<div class="' + cls + '" data-date="' + dateStr + '"><div class="cal-daynum">' + d + '</div></div>';
+      }
+      return cells;
+    }
+    function countText() {
+      var job = S.getJob(jobId) || {};
+      var dates = Object.keys(picked);
+      var total = dates.reduce(function (sum, d) {
+        var rate = U.parseDate(d).getDay() === 0 ? (job.holidayRate || 0) : (job.normalRate || 0);
+        return sum + Math.round((Number(hours) || 0) * rate);
+      }, 0);
+      return dates.length + '件選択中' + (dates.length ? '（合計 ' + fmtYen(total) + '）' : '');
+    }
+
+    var html =
+      '<div class="field"><label>バイト先</label><select id="bs-job">' + jobOptionsHtml() + '</select></div>' +
+      '<div class="field"><label>1日あたりの時間</label><input type="number" step="0.25" id="bs-hours" value="' + hours + '" /></div>' +
+      '<p class="note">日曜日は自動で日祝レート扱いになります。祝日を含む場合は、保存後にその日のシフトだけ個別に編集してチェックを入れてください。</p>' +
+      '<div class="cal-head">' +
+      '<button type="button" id="bs-prev" class="icon-btn small">‹</button>' +
+      '<div id="bs-title" class="cal-title">' + y + '年' + m + '月</div>' +
+      '<button type="button" id="bs-next" class="icon-btn small">›</button>' +
+      '</div>' +
+      '<div class="cal-weekdays"><span>日</span><span>月</span><span>火</span><span>水</span><span>木</span><span>金</span><span>土</span></div>' +
+      '<div id="bs-grid" class="cal-grid">' + gridHtml() + '</div>' +
+      '<p class="note" id="bs-count">' + countText() + '</p>' +
+      '<div class="sheet-actions"><button class="btn primary" id="bs-save">選択した日にまとめて記録</button></div>';
+
+    openSheet('バイトをまとめて記録', html, function (body) {
+      function bindGridCells() {
+        body.querySelectorAll('#bs-grid .cal-day:not(.pad)').forEach(function (cell) {
+          cell.addEventListener('click', function () {
+            var d = cell.getAttribute('data-date');
+            if (picked[d]) delete picked[d]; else picked[d] = true;
+            cell.classList.toggle('picked', !!picked[d]);
+            body.querySelector('#bs-count').textContent = countText();
+          });
+        });
+      }
+      function rebuildGrid() {
+        body.querySelector('#bs-title').textContent = y + '年' + m + '月';
+        body.querySelector('#bs-grid').innerHTML = gridHtml();
+        bindGridCells();
+      }
+      bindGridCells();
+
+      body.querySelector('#bs-job').addEventListener('change', function () {
+        jobId = this.value;
+        hours = (S.getJob(jobId) || {}).defaultHours || hours;
+        body.querySelector('#bs-hours').value = hours;
+        body.querySelector('#bs-count').textContent = countText();
+      });
+      body.querySelector('#bs-hours').addEventListener('input', function () {
+        hours = this.value;
+        body.querySelector('#bs-count').textContent = countText();
+      });
+      body.querySelector('#bs-prev').addEventListener('click', function () {
+        m -= 1; if (m < 1) { m = 12; y -= 1; }
+        rebuildGrid();
+      });
+      body.querySelector('#bs-next').addEventListener('click', function () {
+        m += 1; if (m > 12) { m = 1; y += 1; }
+        rebuildGrid();
+      });
+
+      body.querySelector('#bs-save').addEventListener('click', function () {
+        var dates = Object.keys(picked);
+        if (!dates.length) { toast('日付を選択してください'); return; }
+        var finalJobId = body.querySelector('#bs-job').value;
+        var finalHours = Number(body.querySelector('#bs-hours').value) || 0;
+        dates.forEach(function (d) {
+          S.addShift({
+            jobId: finalJobId,
+            date: d,
+            hours: finalHours,
+            holidayRate: U.parseDate(d).getDay() === 0
+          });
+        });
+        closeSheet();
+        renderAll();
+        toast(dates.length + '件のシフトを記録しました');
+      });
     });
   }
 

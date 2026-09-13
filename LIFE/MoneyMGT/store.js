@@ -554,8 +554,12 @@
 
     /* ---------- 残高計算 ---------- */
 
-    /* asOf 時点までに確定している入出（実績のみ）で口座残高を求める */
-    accountBalance: function (accountId, asOf) {
+    /* asOf 時点までに確定している入出（実績のみ）で口座残高を求める。
+     * dateField='settleDate'（省略時・実際の口座残高）：実際に口座から動く日で判定する。
+     * dateField='date'（実質残高）：買った日／稼いだ日など、その出来事が起きた日で判定する。
+     * どちらも「予定」ステータスの取引は含めない（それはこの切り替えとは別の話）。 */
+    accountBalance: function (accountId, asOf, dateField) {
+      var field = dateField === 'date' ? 'date' : 'settleDate';
       var acc = this.getAccount(accountId);
       if (!acc) return 0;
       var total = acc.baseBalance;
@@ -563,21 +567,24 @@
 
       this.data.transactions.forEach(function (t) {
         if (t.accountId !== accountId || t.status === 'planned') return;
-        if (cmpDate(t.settleDate, acc.baseDate) < 0 || cmpDate(t.settleDate, asOf) > 0) return;
+        var d = t[field];
+        if (cmpDate(d, acc.baseDate) < 0 || cmpDate(d, asOf) > 0) return;
         total += t.type === 'expense' ? -t.amount : t.amount;
       });
       return total;
     },
 
-    totalBalance: function (asOf) {
+    totalBalance: function (asOf, dateField) {
       var self = this;
       return this.activeAccounts().reduce(function (sum, a) {
-        return sum + self.accountBalance(a.id, asOf);
+        return sum + self.accountBalance(a.id, asOf, dateField);
       }, 0);
     },
 
-    /* 今日以降・horizonDays 以内に起こりうる入出金イベント一覧（未来分のみ） */
-    upcomingEvents: function (horizonDays) {
+    /* 今日以降・horizonDays 以内に起こりうる入出金イベント一覧（未来分のみ）。
+     * dateField は accountBalance と同じ意味（省略時 settleDate＝実際の口座残高）。 */
+    upcomingEvents: function (horizonDays, dateField) {
+      var field = dateField === 'date' ? 'date' : 'settleDate';
       var today = todayStr();
       var horizonEnd = addDays(today, horizonDays);
       var events = [];
@@ -585,9 +592,10 @@
       function findCard(id) { return cards.filter(function (c) { return c.id === id; })[0] || null; }
 
       this.data.transactions.forEach(function (t) {
-        if (cmpDate(t.settleDate, today) > 0 && cmpDate(t.settleDate, horizonEnd) <= 0) {
+        var d = t[field];
+        if (cmpDate(d, today) > 0 && cmpDate(d, horizonEnd) <= 0) {
           events.push({
-            date: t.settleDate,
+            date: d,
             label: t.title || defaultTitleFor(t.type),
             amount: t.type === 'expense' ? -t.amount : t.amount,
             accountId: t.accountId,
@@ -605,10 +613,11 @@
         var guard = 0;
         while (guard < 60) {
           var settle = computeCardSettleDate(charge, s.cardId ? findCard(s.cardId) : null);
-          if (cmpDate(settle, horizonEnd) > 0) break;
-          if (cmpDate(settle, today) > 0) {
+          var eventDate = field === 'date' ? charge : settle;
+          if (cmpDate(eventDate, horizonEnd) > 0) break;
+          if (cmpDate(eventDate, today) > 0) {
             events.push({
-              date: settle,
+              date: eventDate,
               label: 'サブスク：' + s.name,
               amount: -s.amount,
               accountId: s.accountId,
@@ -625,8 +634,9 @@
     },
 
     /* 指定した月（year, month:1-12）に発生する入出金イベント一覧。
-     * upcomingEvents と違って過去日も含む（カレンダー表示用）。 */
-    monthEvents: function (year, month) {
+     * upcomingEvents と違って過去日も含む（カレンダー表示用）。dateField の意味は同じ。 */
+    monthEvents: function (year, month, dateField) {
+      var field = dateField === 'date' ? 'date' : 'settleDate';
       var mm = pad2(month);
       var start = year + '-' + mm + '-01';
       var lastDay = new Date(year, month, 0).getDate();
@@ -636,9 +646,10 @@
       function findCard(id) { return cards.filter(function (c) { return c.id === id; })[0] || null; }
 
       this.data.transactions.forEach(function (t) {
-        if (cmpDate(t.settleDate, start) >= 0 && cmpDate(t.settleDate, end) <= 0) {
+        var d = t[field];
+        if (cmpDate(d, start) >= 0 && cmpDate(d, end) <= 0) {
           events.push({
-            date: t.settleDate,
+            date: d,
             label: t.title || defaultTitleFor(t.type),
             amount: t.type === 'expense' ? -t.amount : t.amount,
             accountId: t.accountId,
@@ -648,20 +659,21 @@
         }
       });
 
-      /* サブスクは「カードに請求される日」と「実際に口座から引き落とされる日」がズレるので、
-       * この月に引き落としが来るものを探すため、前後数ヶ月ぶんの請求日候補を計算し直す。 */
       this.data.subscriptions.forEach(function (s) {
         if (!s.active) return;
         var card = s.cardId ? findCard(s.cardId) : null;
-        subscriptionSettleDatesInRange(s, card, start, end).forEach(function (settle) {
-          events.push({
-            date: settle,
-            label: 'サブスク：' + s.name,
-            amount: -s.amount,
-            accountId: s.accountId,
-            kind: 'subscription'
+        if (field === 'date') {
+          /* 実質残高：締め日ロールオーバーを気にせず、素直にこの月の請求日（カードに計上される日）だけ見る */
+          var charge = addMonthsClamped(start, 0, s.billingDay);
+          if (cmpDate(charge, s.startDate) >= 0) {
+            events.push({ date: charge, label: 'サブスク：' + s.name, amount: -s.amount, accountId: s.accountId, kind: 'subscription' });
+          }
+        } else {
+          /* 実際の口座残高：カードの締め日・支払日を経た実際の引き落とし日を探す（月をまたぐことがある） */
+          subscriptionSettleDatesInRange(s, card, start, end).forEach(function (settle) {
+            events.push({ date: settle, label: 'サブスク：' + s.name, amount: -s.amount, accountId: s.accountId, kind: 'subscription' });
           });
-        });
+        }
       });
 
       events.sort(function (a, b) { return cmpDate(a.date, b.date); });
@@ -702,17 +714,16 @@
     },
 
     /* 特定の1日・特定の口座の残高。
-     * includePlanned=true 「実質残高」：予定ステータスの入出金も、その日までに来ていれば加味する。
-     * includePlanned=false「実際の口座残高」：確定した入出金だけで計算する。
-     * 過去日はどちらの意味でも同じ（accountBalance が既に確定分だけを積算しているため）。 */
-    accountBalanceOnDate: function (accountId, dateStr, includePlanned) {
+     * dateField='date'（実質残高）：買った日／稼いだ日にその場で口座に反映されたものとして計算する。
+     * dateField='settleDate'（省略時・実際の口座残高）：実際に口座から引き落とされる／振り込まれる日で計算する。
+     * どちらも「予定」ステータスの取引を含める（未確定かどうかはこの切り替えとは別の話のため）。 */
+    accountBalanceOnDate: function (accountId, dateStr, dateField) {
       var today = todayStr();
-      if (cmpDate(dateStr, today) <= 0) return this.accountBalance(accountId, dateStr);
-      var total = this.accountBalance(accountId, today);
-      var events = this.upcomingEvents(daysBetween(today, dateStr));
+      if (cmpDate(dateStr, today) <= 0) return this.accountBalance(accountId, dateStr, dateField);
+      var total = this.accountBalance(accountId, today, dateField);
+      var events = this.upcomingEvents(daysBetween(today, dateStr), dateField);
       events.forEach(function (ev) {
         if (ev.accountId !== accountId || cmpDate(ev.date, dateStr) > 0) return;
-        if (!includePlanned && ev.pending) return;
         total += ev.amount;
       });
       return total;
